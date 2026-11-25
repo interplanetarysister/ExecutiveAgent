@@ -1,11 +1,16 @@
-# Executive research storage
+# ExecutiveAgent — private research storage and owner access
 
-Cloudflare Worker: `executive-agent-research` in account `ab53799fa1a2189dd6aee605504c9fa4`.
+Cloudflare account: Michelle Rogers Executive (`ab53799fa1a2189dd6aee605504c9fa4`).
+Worker: `executive-agent-research`.
+R2 binding: `RESEARCH_BUCKET` → `researched-knowledge` (native R2 access; public r2.dev hosting disabled).
+Supabase project: `bimmfmydbmooarobilsq` (not iFund).
 
-Native R2 binding `RESEARCH_BUCKET` targets the private `researched-knowledge` bucket. Public r2.dev access has been disabled.
+## Owner authorization
+Two owner email addresses are securely configured in Worker secret `EXECUTIVE_OWNER_EMAILS` (values omitted from this public repository). Each must first have a genuine **email-confirmed Supabase Auth user** in the ExecutiveAgent project. The Worker verifies an incoming Bearer token against `/auth/v1/user` for every document operation; unconfirmed accounts and non-allowlisted users are denied. No user was enrolled by this deployment. The existing Supabase publishable API key is stored as Worker secret `SUPABASE_PUBLISHABLE_KEY`. Do not use a service-role key, account access token, or R2 S3 credentials in runtime.
 
-Supabase URL is configured for project `bimmfmydbmooarobilsq`, and `SUPABASE_PUBLISHABLE_KEY` is installed as a Worker secret. The Worker denies document access until `EXECUTIVE_OWNER_USER_ID` is set to a verified Supabase Auth user UUID. No service-role key is needed by this API.
+Routes: `GET /health` (non-sensitive), `GET /v1/documents` (list), and `PUT`, `GET`, `DELETE /v1/documents/{key}`, all document routes requiring owner authentication. Document keys are segregated by Supabase user UUID; each authorized email accesses its own objects.
 
-API: `/health` (public), `/v1/documents` (list), `/v1/documents/{name}` (PUT, GET, DELETE) with authenticated Bearer access.
+## Deployment verification
+Cloudflare API verified deployed script, Worker route, R2 binding, and secret names. Live requests from this environment could not resolve the workers.dev hostname; **health and HTTP 401 behavior remain unverified**, as does authenticated upload/list/download/delete. No production research data was written. Do not claim full acceptance before testing.
 
-Cloudflare confirmed the deployment and binding; external HTTP checks were blocked by DNS from this environment. Authenticated document roundtrip remains unverified until the owner is enrolled. Never use the iFund production account.
+Only the Michelle Rogers Executive Cloudflare account may be used. Never modify the iFund account as part of this deployment.
