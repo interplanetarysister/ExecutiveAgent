@@ -1,6 +1,6 @@
 /**
  * Michelle Rogers Executive - private R2 document API.
- * Supabase Auth validates the user; a specific owner UUID grants access.
+ * Supabase Auth validates confirmed owner email addresses.
  * No service-role key, R2 S3 key, or Cloudflare management token is needed.
  */
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };
@@ -16,7 +16,7 @@ async function authenticate(request, env) {
   const header = request.headers.get("authorization") || "";
   const match = /^Bearer\s+([^\s]+)$/i.exec(header);
   if (!match) return { error: json({error: "Authentication required"}, 401) };
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.EXECUTIVE_OWNER_USER_ID) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.EXECUTIVE_OWNER_EMAILS) {
     return { error: json({error: "Executive owner authentication has not been configured"}, 503) };
   }
   let base;
@@ -31,7 +31,8 @@ async function authenticate(request, env) {
     });
     if (!response.ok) return { error: json({error: "Invalid session"}, 401) };
     const user = await response.json();
-    if (!user?.id || user.id !== env.EXECUTIVE_OWNER_USER_ID) {
+    const allowed = String(env.EXECUTIVE_OWNER_EMAILS).split(",").map(x => x.trim().toLowerCase());
+    if (!user?.id || !user.email_confirmed_at || !allowed.includes(String(user.email || "").toLowerCase())) {
       return { error: json({error: "Not authorized for executive documents"}, 403) };
     }
     return { id: user.id };
