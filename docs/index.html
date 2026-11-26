@@ -328,7 +328,7 @@ async function testDocumentIntegration(statusNode, button) {
     if (!put.ok) throw Error("Upload failed (HTTP " + put.status + ")");
     uploaded = true;
     statuses.push("Upload: passed");
-    const listing = await request("/v1/documents?prefix=diagnostics/");
+    const listing = await request("/v1/documents?prefix=diagnostics");
     if (!listing.ok) throw Error("Listing failed (HTTP " + listing.status + ")");
     const listed = await listing.json();
     if (!listed.objects?.some(o => o.name === key)) throw Error("Test object not listed");
