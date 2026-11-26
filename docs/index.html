@@ -138,15 +138,9 @@ async function boot() {
 }
 
 async function enter() {
+  // Every signed-in account can enter the dashboard shell.
+  // Database RLS and individual API permissions remain authoritative for data/actions.
   await loadIdentity();
-  if (!role || !["owner", "admin", "researcher", "viewer"].includes(role)) {
-    $("#gate").classList.remove("hide");
-    $("#tabs").classList.add("hide");
-    $("#app").classList.add("hide");
-    $("#signout").classList.remove("hide");
-    msg("This account does not have active executive membership.");
-    return;
-  }
   $("#gate").classList.add("hide");
   $("#signout").classList.remove("hide");
   $("#tabs").classList.remove("hide");
