@@ -277,7 +277,13 @@ async function overview(app) {
       el("span",{class:a.severity==="overdue"?"tag hot":"tag",text:a.severity}),
       day(a.due_at)
     ]),"No tasks due within 72 hours or overdue."));
-    alertBox.append(el("div",{class:"muted",text:"Automatically reviewed every 30 minutes. Alerts reflect the latest scheduled refresh."}));
+    const run = await exec().from("scheduler_runs")
+      .select("ran_at,refreshed").order("ran_at",{ascending:false}).limit(1).maybeSingle();
+    const lastRun = run.error ? "Run history unavailable: " + run.error.message
+      : run.data ? "Last scheduled run: " + new Date(run.data.ran_at).toLocaleString() +
+          " · " + run.data.refreshed + " task alerts reviewed"
+      : "Awaiting the first verified scheduled execution.";
+    alertBox.append(el("div",{class:"muted",text:lastRun}));
   }
   app.append(card("Recent decisions", table(["decision", "status", "when"],
     (dec.data || []).map(d => [d.decision, d.status, day(d.decided_at)]), "No decisions recorded.")));
