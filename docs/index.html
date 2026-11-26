@@ -299,9 +299,72 @@ async function research(app) {
     "No research recorded yet."));
 }
 
+// Runs a real authenticated Cloudflare R2 round-trip with isolated disposable data.
+// Cleanup is attempted even when an intermediate verification fails.
+async function testDocumentIntegration(statusNode, button) {
+  button.disabled = true;
+  const tokenResult = await sb.auth.getSession();
+  const accessToken = tokenResult.data?.session?.access_token;
+  if (!accessToken) {
+    statusNode.textContent = "Sign in again to run document verification.";
+    button.disabled = false;
+    return;
+  }
+  const key = "diagnostics/r2-roundtrip-" + crypto.randomUUID() + ".txt";
+  const text = "Michelle Rogers Executive R2 test " + key;
+  const endpoint = "/v1/documents/" + key.split("/").map(encodeURIComponent).join("/");
+  const request = (path, options = {}) => fetch(workerUrl + path, {
+    ...options,
+    headers: { Authorization: "Bearer " + accessToken, ...(options.headers || {}) }
+  });
+  const statuses = [];
+  let uploaded = false;
+  try {
+    statusNode.textContent = "Running authenticated R2 checks…";
+    const health = await fetch(workerUrl + "/health");
+    if (!health.ok || (await health.json()).status !== "ok") throw Error("Worker health check failed");
+    statuses.push("Worker health: passed");
+    const put = await request(endpoint, { method: "PUT", headers: { "content-type": "text/plain" }, body: text });
+    if (!put.ok) throw Error("Upload failed (HTTP " + put.status + ")");
+    uploaded = true;
+    statuses.push("Upload: passed");
+    const listing = await request("/v1/documents?prefix=diagnostics/");
+    if (!listing.ok) throw Error("Listing failed (HTTP " + listing.status + ")");
+    const listed = await listing.json();
+    if (!listed.objects?.some(o => o.name === key)) throw Error("Test object not listed");
+    statuses.push("Listing: passed");
+    const read = await request(endpoint);
+    if (!read.ok || (await read.text()) !== text) throw Error("Download/content verification failed");
+    statuses.push("Download integrity: passed");
+  } catch (error) {
+    statuses.push("ERROR: " + (error.message || String(error)));
+  } finally {
+    if (uploaded) {
+      try {
+        const del = await request(endpoint, { method: "DELETE" });
+        if (!del.ok) throw Error("HTTP " + del.status);
+        statuses.push("Cleanup deletion: passed");
+        const check = await request(endpoint);
+        if (check.status !== 404) throw Error("Object remains accessible");
+        statuses.push("Deletion verification: passed");
+      } catch (error) {
+        statuses.push("Cleanup FAILED: " + (error.message || String(error)) + " (test object: " + key + ")");
+      }
+    }
+    statusNode.textContent = statuses.join("\\n");
+    button.disabled = false;
+  }
+}
+
 async function documents(app) {
   const box = card("Private documents (Cloudflare R2)", [
     el("div", { class: "muted", text: "Connected to the dedicated executive Cloudflare R2 Worker. Authentication uses your current Supabase session." }),
+    el("div", { class: "row", style: "margin-top:12px" }, [
+      el("button", { text: "Run authenticated document test", onclick: async () => {
+        await testDocumentIntegration($("#docDiagnostics"), $("#docTestButton"));
+      }, id: "docTestButton" })
+    ]),
+    el("div", { id: "docDiagnostics", class: "muted", style: "white-space:pre-wrap;margin-top:8px", "aria-live": "polite" }),
     el("div", { id: "docList", class: "muted", style: "margin-top:12px", text: "Loading…" })
   ]);
   app.append(box);
@@ -331,6 +394,7 @@ async function documents(app) {
     const file = el("input", { type: "file" });
     list.append(el("div", { class: "row", style: "margin-top:12px" }, [file, el("button", { class: "primary", text: "Upload", onclick: async () => {
       const f = file.files[0]; if (!f) return;
+      if (f.size > 10 * 1024 * 1024) return alert("Maximum file size is 10 MB.");
       const ext = f.name.split(".").pop().toLowerCase();
       const mime = ({pdf:"application/pdf",txt:"text/plain",md:"text/markdown",markdown:"text/markdown",json:"application/json"})[ext];
       if (!mime) return alert("Supported file formats: PDF, TXT, MD, JSON.");
