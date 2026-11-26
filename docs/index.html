@@ -79,6 +79,9 @@ const CFG = {
   supabaseUrl: "https://bimmfmydbmooarobilsq.supabase.co",
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbW1mbXlkYm1vb2Fyb2JpbHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NjE5MjksImV4cCI6MjExMTEzNzkyOX0.U716FAEBnA8-TsZj8694zt1hjVB9Nm6khHJxnrsD-q4"
 };
+const INITIAL_HASH = new URLSearchParams(location.hash.replace(/^#/, ""));
+const INITIAL_TYPE = INITIAL_HASH.get("type");
+const INITIAL_ERR = INITIAL_HASH.get("error_description");
 const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
 const sb = createClient(CFG.supabaseUrl, CFG.anonKey, { auth: { detectSessionInUrl: true, persistSession: true } });
 
@@ -112,10 +115,10 @@ async function loadIdentity() {
 }
 
 async function boot() {
+  if (INITIAL_ERR) msg("That link could not be used: " + INITIAL_ERR.replace(/\+/g, " "));
   const { data } = await sb.auth.getSession();
   session = data.session;
-  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
-  const type = hash.get("type");
+  const type = INITIAL_TYPE;
   if (session && (type === "invite" || type === "recovery")) {
     $("#setpw").classList.remove("hide");
     $("#signin").classList.add("hide");
@@ -164,7 +167,8 @@ $("#signout").onclick = async () => { await sb.auth.signOut(); location.reload()
 
 const TABS = [
   ["overview", "Overview"], ["funding", "Funding"], ["tasks", "Tasks"],
-  ["knowledge", "Knowledge"], ["research", "Research"], ["documents", "Documents"]
+  ["knowledge", "Knowledge"], ["research", "Research"], ["documents", "Documents"],
+  ["account", "Account"]
 ];
 function buildTabs() {
   const nav = $("#tabs"); nav.textContent = "";
@@ -175,7 +179,7 @@ function buildTabs() {
 function render(id) {
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === (TABS.find(t => t[0] === id) || [])[1])));
   const app = $("#app"); app.textContent = "";
-  ({ overview, funding, tasks, knowledge, research, documents }[id] || overview)(app);
+  ({ overview, funding, tasks, knowledge, research, documents, account }[id] || overview)(app);
 }
 function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
 function table(headers, rows, empty) {
@@ -325,7 +329,34 @@ async function documents(app) {
   } catch (e) { const list = $("#docList"); list.className = "err"; list.textContent = "Worker unreachable from this page: " + e.message; }
 }
 
-sb.auth.onAuthStateChange((_e, s) => { if (!s) { session = null; } });
+async function account(app) {
+  const box = card("Account", [
+    el("div", { class: "muted", text: "Signed in as " + (me.email || me.id) + (role ? " with role " + role : "") }),
+    el("div", { class: "muted", text: "Set a password to sign in without waiting for an emailed link." }),
+    el("div", { class: "row", style: "margin-top:12px" }, [
+      el("input", { id: "acctPw", type: "password", autocomplete: "new-password", placeholder: "New password (min 10 characters)", style: "min-width:280px" }),
+      el("button", { class: "primary", text: "Save password", onclick: async () => {
+        const pw = $("#acctPw").value;
+        const out = $("#acctMsg");
+        out.className = "muted";
+        if (pw.length < 10) { out.className = "err"; out.textContent = "Use at least 10 characters."; return; }
+        const { error } = await sb.auth.updateUser({ password: pw });
+        if (error) { out.className = "err"; out.textContent = error.message; return; }
+        $("#acctPw").value = "";
+        out.textContent = "Password saved. You can sign in with it from now on.";
+      } })
+    ]),
+    el("div", { id: "acctMsg", class: "muted", style: "margin-top:10px" }),
+    el("div", { class: "row", style: "margin-top:16px" }, [
+      el("button", { text: "Sign out", onclick: async () => { await sb.auth.signOut(); location.reload(); } })
+    ])
+  ]);
+  app.append(box);
+}
+
+sb.auth.onAuthStateChange((event) => {
+  if (event === "PASSWORD_RECOVERY") { $("#setpw").classList.remove("hide"); $("#gate").classList.remove("hide"); }
+});
 await boot();
 </script>
 </body>
