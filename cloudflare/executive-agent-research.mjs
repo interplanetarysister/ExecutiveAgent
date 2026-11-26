@@ -24,11 +24,10 @@ async function authenticate(request, env) {
   if (base.protocol !== "https:" || !base.hostname.endsWith(".supabase.co") || base.pathname !== "/") {
     return { error: json({error: "Invalid authentication configuration"}, 503) };
   }
-  let authStage = "user";
   try {
     const response = await fetch(new URL("/auth/v1/user", base), {
       headers: { "apikey": String(env.SUPABASE_PUBLISHABLE_KEY).trim(), "authorization": "Bearer " + match[1] },
-      redirect: "error"
+      redirect: "manual"
     });
     if (!response.ok) return { error: json({error: "Invalid session"}, 401) };
     const user = await response.json();
@@ -40,9 +39,8 @@ async function authenticate(request, env) {
     const membershipUrl = new URL("/rest/v1/executive_memberships",base);
     membershipUrl.searchParams.set("user_id","eq."+user.id);
     membershipUrl.searchParams.set("select","role,active");
-    authStage = "membership";
     const membershipResponse = await fetch(membershipUrl,{
-      headers:{apikey:String(env.SUPABASE_PUBLISHABLE_KEY).trim(),authorization:"Bearer "+match[1]},redirect:"error"
+      headers:{apikey:String(env.SUPABASE_PUBLISHABLE_KEY).trim(),authorization:"Bearer "+match[1]},redirect:"manual"
     });
     if (!membershipResponse.ok) return {error:json({error:"Membership verification unavailable"},503)};
     const memberships = await membershipResponse.json();
@@ -51,8 +49,8 @@ async function authenticate(request, env) {
     }
     return { id: user.id };
   } catch (error) {
-    console.error("Executive auth upstream failure", authStage, error?.name || "error");
-    return { error: json({error: "Authentication service unavailable", stage: authStage, kind: error?.name === "TypeError" ? "type" : "other"}, 503) };
+    console.error("Executive upstream auth error", error?.name || "unknown");
+    return { error: json({error: "Authentication service unavailable"}, 503) };
   }
 }
 
