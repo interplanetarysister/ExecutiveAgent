@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Michelle Rogers Executive</title>
+<style>
+  :root{--bg:#0b0e13;--panel:#141922;--line:#232b38;--text:#e6ecf5;--dim:#8b98ac;--accent:#5b9dff;--good:#3fbf7f;--warn:#e0a13a}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  h1{font-size:15px;margin:0;letter-spacing:.02em}
+  h1 span{color:var(--dim);font-weight:400}
+  main{padding:20px;max-width:1080px;margin:0 auto;display:grid;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 12px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .metric b{display:block;font-size:26px;font-weight:600;letter-spacing:-.01em}
+  .metric small{color:var(--dim)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  input,select,textarea,button{font:inherit;color:var(--text);background:#0f141c;border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+  input:focus,textarea:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+  button{cursor:pointer;background:#1b2431}
+  button.primary{background:var(--accent);color:#04101f;border-color:transparent;font-weight:600}
+  button.link{background:none;border:none;color:var(--dim);padding:4px 0;text-align:left}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--dim);font-size:13px}
+  .err{color:#ff8b8b;font-size:13px;white-space:pre-wrap}
+  .tag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+  .tag.ok{color:var(--good);border-color:#245}
+  #gate{max-width:420px;margin:9vh auto;padding:0 20px}
+  #gate .card{display:grid;gap:12px}
+  nav{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 4px;max-width:1080px;margin:0 auto}
+  nav button{font-size:13px;padding:6px 11px}
+  nav button[aria-selected="true"]{border-color:var(--accent);color:var(--accent)}
+  .hide{display:none!important}
+  @media(max-width:620px){th:nth-child(n+3),td:nth-child(n+3){display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Michelle Rogers <span>Executive</span></h1>
+  <div class="row">
+    <span id="whoami" class="muted"></span>
+    <button id="signout" class="hide">Sign out</button>
+  </div>
+</header>
+
+<section id="gate">
+  <div class="card">
+    <div class="muted" id="gateNote">Executive access. Sign in with your authorized owner email.</div>
+    <div id="setpw" class="hide">
+      <label class="muted" for="newpw">Choose a password for this account</label>
+      <input id="newpw" type="password" autocomplete="new-password" placeholder="At least 10 characters">
+      <div class="row" style="margin-top:8px"><button id="savepw" class="primary">Save password</button></div>
+    </div>
+    <div id="signin">
+      <label class="muted" for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label class="muted" for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Password">
+      <div class="row" style="margin-top:10px">
+        <button id="login" class="primary">Sign in</button>
+        <button id="magic">Email me a sign-in link</button>
+      </div>
+    </div>
+    <div id="gateMsg" class="err"></div>
+  </div>
+</section>
+
+<nav id="tabs" class="hide"></nav>
+<main id="app" class="hide"></main>
+
+<script type="module">
+const CFG = {
+  supabaseUrl: "https://bimmfmydbmooarobilsq.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbW1mbXlkYm1vb2Fyb2JpbHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NjE5MjksImV4cCI6MjExMTEzNzkyOX0.U716FAEBnA8-TsZj8694zt1hjVB9Nm6khHJxnrsD-q4"
+};
+const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+const sb = createClient(CFG.supabaseUrl, CFG.anonKey, { auth: { detectSessionInUrl: true, persistSession: true } });
+
+const $ = (s) => document.querySelector(s);
+const el = (t, a = {}, kids = []) => {
+  const n = document.createElement(t);
+  for (const [k, v] of Object.entries(a)) {
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+};
+const money = (n) => n == null ? "not set" : "$" + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const day = (d) => d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+const esc = (s) => String(s ?? "");
+
+let session = null, me = null, role = null;
+let workerUrl = localStorage.getItem("workerUrl") || "";
+
+function msg(t) { $("#gateMsg").textContent = t || ""; }
+
+async function loadIdentity() {
+  me = session.user;
+  const { data } = await sb.from("executive_memberships").select("role,active").eq("user_id", me.id).maybeSingle();
+  role = data?.active ? data.role : null;
+  $("#whoami").textContent = (me.email || me.id) + (role ? " · " + role : " · no executive role");
+  return role;
+}
+
+async function boot() {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const type = hash.get("type");
+  if (session && (type === "invite" || type === "recovery")) {
+    $("#setpw").classList.remove("hide");
+    $("#signin").classList.add("hide");
+    $("#gateNote").textContent = "Your email is confirmed. Set a password to finish.";
+    $("#gate").classList.remove("hide");
+    history.replaceState(null, "", location.pathname + location.search);
+    return;
+  }
+  if (!session) return;
+  await enter();
+}
+
+async function enter() {
+  await loadIdentity();
+  $("#gate").classList.add("hide");
+  $("#signout").classList.remove("hide");
+  $("#tabs").classList.remove("hide");
+  $("#app").classList.remove("hide");
+  buildTabs();
+  render("overview");
+}
+
+$("#login").onclick = async () => {
+  msg("");
+  const { error } = await sb.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#pw").value });
+  if (error) return msg(error.message);
+  const { data } = await sb.auth.getSession(); session = data.session; await enter();
+};
+$("#magic").onclick = async () => {
+  msg("");
+  const email = $("#email").value.trim();
+  if (!email) return msg("Enter your email first.");
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+  msg(error ? error.message : "Sign-in link sent. Open it on this device.");
+};
+$("#savepw").onclick = async () => {
+  msg("");
+  const pw = $("#newpw").value;
+  if (pw.length < 10) return msg("Use at least 10 characters.");
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) return msg(error.message);
+  $("#setpw").classList.add("hide"); $("#signin").classList.remove("hide");
+  await loadIdentity(); await enter();
+};
+$("#signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+const TABS = [
+  ["overview", "Overview"], ["funding", "Funding"], ["tasks", "Tasks"],
+  ["knowledge", "Knowledge"], ["research", "Research"], ["documents", "Documents"]
+];
+function buildTabs() {
+  const nav = $("#tabs"); nav.textContent = "";
+  for (const [id, label] of TABS) {
+    nav.append(el("button", { text: label, "aria-selected": String(id === "overview"), onclick: () => render(id) }));
+  }
+}
+function render(id) {
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === (TABS.find(t => t[0] === id) || [])[1])));
+  const app = $("#app"); app.textContent = "";
+  ({ overview, funding, tasks, knowledge, research, documents }[id] || overview)(app);
+}
+function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
+function table(headers, rows, empty) {
+  if (!rows.length) return el("div", { class: "muted", text: empty || "Nothing recorded yet." });
+  const t = el("table");
+  t.append(el("tr", {}, headers.map(h => el("th", { text: h }))));
+  for (const r of rows) t.append(el("tr", {}, r.map(c => el("td", {}, c))));
+  return t;
+}
+function fail(node, e) { node.append(el("div", { class: "err", text: "Could not load: " + (e.message || e) })); }
+
+async function overview(app) {
+  const c = card("Executive position", el("div", { class: "metrics" }, [
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "verified received" })]),
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "open tasks" })]),
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "knowledge entries" })]),
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "open opportunities" })])
+  ]));
+  app.append(c);
+  const [{ data: fr }, { data: tk, count: taskCount }, { data: kn, count: kCount }, { data: op, count: oCount }] =
+    await Promise.all([
+      sb.schema("executive").from("funding_received").select("*").maybeSingle(),
+      sb.schema("executive").from("tasks").select("id", { count: "exact" }).neq("status", "done"),
+      sb.schema("executive").from("knowledge").select("id", { count: "exact" }).limit(1),
+      sb.from("executive_opportunities").select("id", { count: "exact" }).not("status", "in", "(funded,rejected,expired)")
+    ]);
+  const vals = [money(fr?.verified_received_usd ?? 0), taskCount ?? 0, kCount ?? 0, oCount ?? 0];
+  c.querySelectorAll(".metric b").forEach((b, i) => b.textContent = vals[i]);
+  app.append(el("div", { class: "muted", text: "Objective: $450,000 in verified, received capital. Only cleared funds are counted." }));
+}
+
+async function funding(app) {
+  const box = card("Funding", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const [{ data: rec }, { data: pipe, error: pe }, { data: opps, error: oe }] = await Promise.all([
+    sb.schema("executive").from("funding_received").select("*").maybeSingle(),
+    sb.schema("executive").from("funding_pipeline").select("*"),
+    sb.from("executive_opportunities").select("title,organization,category,status,amount_estimate,amount_verified,currency,deadline_at,source_url").order("deadline_at", { ascending: true, nullsFirst: false }).limit(50)
+  ]);
+  box.textContent = ""; box.append(el("h2", { text: "Funding" }));
+  box.append(el("div", { class: "metrics" }, [
+    el("div", { class: "metric" }, [el("b", { text: money(rec?.verified_received_usd ?? 0) }), el("small", { text: "verified received" })]),
+    el("div", { class: "metric" }, [el("b", { text: money(450000 - Number(rec?.verified_received_usd ?? 0)) }), el("small", { text: "remaining to objective" })])
+  ]));
+  if (pe) fail(box, pe);
+  if (pipe?.length) box.append(table(["stage", "commitments", "amount"], pipe.map(p => [p.stage, p.commitments, money(p.total_amount)])));
+  const h = el("h2", { text: "Opportunities" }); h.style.marginTop = "18px"; box.append(h);
+  if (oe) fail(box, oe);
+  else box.append(table(["opportunity", "funder", "type", "status", "amount", "deadline"],
+    (opps || []).map(o => [
+      o.source_url ? el("a", { href: o.source_url, target: "_blank", rel: "noopener", text: o.title, style: "color:var(--accent)" }) : o.title,
+      esc(o.organization), esc(o.category), esc(o.status),
+      o.amount_verified ? money(o.amount_verified) : (o.amount_estimate ? "~" + money(o.amount_estimate) : ""),
+      day(o.deadline_at)
+    ]), "No opportunities recorded yet."));
+
+  const form = el("div", { class: "row", style: "margin-top:14px" }, [
+    el("input", { id: "oTitle", placeholder: "Opportunity title" }),
+    el("input", { id: "oOrg", placeholder: "Funder" }),
+    el("select", { id: "oCat" }, [["grant", "grant"], ["investment", "investment"], ["sponsorship", "sponsorship"], ["partnership", "partnership"], ["other", "other"]].map(([v, t]) => el("option", { value: v, text: t }))),
+    el("button", { class: "primary", text: "Add", onclick: async () => {
+      const title = $("#oTitle").value.trim(); if (!title) return;
+      const { error } = await sb.from("executive_opportunities").insert({ title, organization: $("#oOrg").value.trim() || null, category: $("#oCat").value, created_by: me.id });
+      if (error) return alert(error.message);
+      render("funding");
+    } })
+  ]);
+  box.append(el("div", { class: "muted", text: "Add an opportunity" }), form);
+}
+
+async function tasks(app) {
+  const box = card("Tasks", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const { data, error } = await sb.schema("executive").from("tasks").select("id,title,status,priority,owner_agent,due_at").order("priority").limit(100);
+  box.textContent = ""; box.append(el("h2", { text: "Tasks" }));
+  if (error) fail(box, error);
+  else box.append(table(["task", "owner", "status", "priority", "due"],
+    (data || []).map(t => [t.title, esc(t.owner_agent || "unassigned"), t.status, t.priority, day(t.due_at)]), "No tasks yet."));
+  const canWrite = role && ["owner", "admin", "researcher"].includes(role);
+  if (canWrite) {
+    const form = el("div", { class: "row", style: "margin-top:14px" }, [
+      el("input", { id: "tTitle", placeholder: "New task" }),
+      el("input", { id: "tOwner", placeholder: "Owner agent" }),
+      el("button", { class: "primary", text: "Add", onclick: async () => {
+        const title = $("#tTitle").value.trim(); if (!title) return;
+        const { error } = await sb.schema("executive").from("tasks").insert({ title, owner_agent: $("#tOwner").value.trim() || null });
+        if (error) return alert(error.message);
+        render("tasks");
+      } })
+    ]);
+    box.append(el("div", { class: "muted", text: "Add a task" }), form);
+  }
+}
+
+async function knowledge(app) {
+  const box = card("Knowledge", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const { data, error } = await sb.schema("executive").from("knowledge").select("department,topic,title,verification,created_at").order("created_at", { ascending: false }).limit(100);
+  box.textContent = ""; box.append(el("h2", { text: "Knowledge" }));
+  if (error) fail(box, error);
+  else box.append(table(["title", "department", "topic", "evidence"], (data || []).map(k => [k.title, k.department, k.topic, k.verification]), "No knowledge recorded yet."));
+}
+
+async function research(app) {
+  const box = card("Research", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const { data, error } = await sb.from("executive_research").select("title,kind,source_url,verified,retrieved_at,created_at").order("created_at", { ascending: false }).limit(100);
+  box.textContent = ""; box.append(el("h2", { text: "Research" }));
+  if (error) fail(box, error);
+  else box.append(table(["title", "kind", "verified", "source"],
+    (data || []).map(r => [r.title, r.kind, r.verified ? "yes" : "no", r.source_url ? el("a", { href: r.source_url, target: "_blank", rel: "noopener", text: "link", style: "color:var(--accent)" }) : ""]),
+    "No research recorded yet."));
+}
+
+async function documents(app) {
+  const box = card("Private documents (Cloudflare R2)", [
+    el("div", { class: "muted", text: "Served by the executive-agent-research Worker. Set its URL once per browser." }),
+    el("div", { class: "row", style: "margin-top:10px" }, [
+      el("input", { id: "wUrl", placeholder: "https://executive-agent-research.<subdomain>.workers.dev", value: workerUrl, style: "min-width:340px" }),
+      el("button", { text: "Save", onclick: () => { workerUrl = $("#wUrl").value.trim().replace(/\/$/, ""); localStorage.setItem("workerUrl", workerUrl); render("documents"); } })
+    ]),
+    el("div", { id: "docList", class: "muted", style: "margin-top:12px", text: workerUrl ? "Loading…" : "No Worker URL set yet." })
+  ]);
+  app.append(box);
+  if (!workerUrl) return;
+  const call = (path, opts = {}) => fetch(workerUrl + path, { ...opts, headers: { Authorization: "Bearer " + session.access_token, ...(opts.headers || {}) } });
+  try {
+    const r = await call("/v1/documents");
+    const j = await r.json();
+    const list = $("#docList"); list.textContent = "";
+    if (!r.ok) { list.className = "err"; list.textContent = j.error || ("HTTP " + r.status); return; }
+    list.className = "";
+    if (!j.objects?.length) { list.className = "muted"; list.textContent = "No documents stored."; }
+    else list.append(table(["name", "size", ""], j.objects.map(o => [o.name, o.size, el("button", { text: "open", onclick: async () => {
+      const rr = await call("/v1/documents/" + encodeURIComponent(o.name));
+      if (!rr.ok) return alert("Could not open document");
+      const b = await rr.blob(); const a = el("a", { href: URL.createObjectURL(b), download: o.name.split("/").pop() }); a.click();
+    } })])));
+    const file = el("input", { type: "file" });
+    list.append(el("div", { class: "row", style: "margin-top:12px" }, [file, el("button", { class: "primary", text: "Upload", onclick: async () => {
+      const f = file.files[0]; if (!f) return;
+      const rr = await call("/v1/documents/" + encodeURIComponent(f.name), { method: "PUT", headers: { "content-type": f.type || "application/octet-stream" }, body: f });
+      const jj = await rr.json().catch(() => ({}));
+      if (!rr.ok) return alert(jj.error || ("HTTP " + rr.status));
+      render("documents");
+    } })]));
+  } catch (e) { const list = $("#docList"); list.className = "err"; list.textContent = "Worker unreachable from this page: " + e.message; }
+}
+
+sb.auth.onAuthStateChange((_e, s) => { if (!s) { session = null; } });
+await boot();
+</script>
+</body>
+</html>
