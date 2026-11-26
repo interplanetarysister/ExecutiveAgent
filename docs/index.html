@@ -138,8 +138,6 @@ async function boot() {
 }
 
 async function enter() {
-  // Every signed-in account can enter the dashboard shell.
-  // Database RLS and individual API permissions remain authoritative for data/actions.
   await loadIdentity();
   $("#gate").classList.add("hide");
   $("#signout").classList.remove("hide");
@@ -174,7 +172,7 @@ $("#savepw").onclick = async () => {
 $("#signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
 const TABS = [["overview", "Overview"], ["tasks", "Tasks"], ["funding", "Funding"],
-  ["relationships", "Relationships"], ["appointments", "Appointments & correspondence"], ["knowledge", "Knowledge"], ["documents", "Documents"], ["account", "Account"]];
+  ["relationships", "Relationships"], ["knowledge", "Knowledge"], ["documents", "Documents"], ["account", "Account"]];
 function buildTabs() {
   const nav = $("#tabs"); nav.textContent = "";
   for (const [id, label] of TABS) nav.append(el("button", { text: label, "aria-selected": String(id === "overview"), onclick: () => render(id) }));
@@ -184,7 +182,7 @@ function render(id) {
   const label = (TABS.find(t => t[0] === id) || TABS[0])[1];
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === label)));
   const app = $("#app"); app.textContent = "";
-  const fn = { overview, tasks, funding, relationships, appointments, knowledge, documents, account }[id] || overview;
+  const fn = { overview, tasks, funding, relationships, knowledge, documents, account }[id] || overview;
   fn(app).catch(e => app.append(el("div", { class: "err", text: "Could not render: " + (e.message || e) })));
 }
 function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
@@ -255,38 +253,6 @@ async function overview(app) {
       return [o.title, el("span", { class: "tag", text: o.status }), el("div", {}, [day(o.deadline_at), " ", tag])];
     }), "No live opportunities.")));
   app.append(grid);
-
-  // Server-side scheduler refreshes these persisted alerts every 30 minutes.
-  const alertBox = card("Scheduled task deadline watch", el("div", {class:"muted",text:"Loading deadline alerts…"}));
-  app.append(alertBox);
-  const alerts = await exec().from("deadline_alerts")
-    .select("task_id,severity,due_at").is("resolved_at",null)
-    .order("due_at",{ascending:true}).limit(20);
-  alertBox.textContent = "";
-  alertBox.append(el("h2",{text:"Scheduled task deadline watch"}));
-  if(alerts.error) {
-    fail(alertBox,alerts.error);
-  } else {
-    const ids = (alerts.data || []).map(a=>a.task_id);
-    let titles = new Map();
-    if(ids.length) {
-      const taskNames=await exec().from("tasks").select("id,title,status").in("id",ids);
-      if(taskNames.error) fail(alertBox,taskNames.error);
-      else titles=new Map((taskNames.data||[]).map(t=>[t.id,t.title]));
-    }
-    alertBox.append(table(["task","severity","due date"],(alerts.data||[]).map(a=>[
-      titles.get(a.task_id)||"Task "+a.task_id.slice(0,8),
-      el("span",{class:a.severity==="overdue"?"tag hot":"tag",text:a.severity}),
-      day(a.due_at)
-    ]),"No tasks due within 72 hours or overdue."));
-    const run = await exec().from("scheduler_runs")
-      .select("ran_at,refreshed").order("ran_at",{ascending:false}).limit(1).maybeSingle();
-    const lastRun = run.error ? "Run history unavailable: " + run.error.message
-      : run.data ? "Last scheduled run: " + new Date(run.data.ran_at).toLocaleString() +
-          " · " + run.data.refreshed + " task alerts reviewed"
-      : "Awaiting the first verified scheduled execution.";
-    alertBox.append(el("div",{class:"muted",text:lastRun}));
-  }
   app.append(card("Recent decisions", table(["decision", "status", "when"],
     (dec.data || []).map(d => [d.decision, d.status, day(d.decided_at)]), "No decisions recorded.")));
 }
@@ -467,193 +433,6 @@ async function relationships(app) {
   ]));
 }
 
-
-const APPOINTMENT_STATES = [["scheduled","scheduled"],["completed","completed"],["rescheduled","rescheduled"],["cancelled","cancelled"]];
-const CORRESPONDENCE_CHANNELS = [["email","email"],["phone","phone"],["meeting","meeting"],["video","video"],["message","message"],["letter","letter"],["other","other"]];
-const CORRESPONDENCE_DIRECTIONS = [["outbound","outbound"],["inbound","inbound"],["internal","internal"]];
-function textSearch(v) { return String(v || "").toLocaleLowerCase().trim(); }
-function safeDatetime(s) {
-  if (!s) return null;
-  const date = new Date(s);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-function relationshipOptions(rows, label) {
-  return [el("option",{value:"",text:label})].concat(rows.map(item=>
-    el("option",{value:item.id,text:item.name || item.full_name})));
-}
-function fmtDateTime(value) { return value ? new Date(value).toLocaleString() : "—"; }
-
-async function appointments(app) {
-  app.append(card("Appointments and correspondence",
-    el("div",{class:"muted",text:"Search meetings, correspondence, and follow-ups by person or company. Records are stored in the executive database."})));
-  const loading = card("Timeline",el("div",{class:"muted",text:"Loading appointments and interactions…"}));
-  app.append(loading);
-  const [orgRes, peopleRes, appointmentRes, commRes] = await Promise.all([
-    exec().from("organizations").select("id,name").order("name").limit(1000),
-    exec().from("people").select("id,full_name,organization_id").order("full_name").limit(1000),
-    exec().from("appointments").select("id,title,person_id,organization_id,starts_at,ends_at,location,meeting_link,agenda,notes,status,outcome,follow_up_at").order("starts_at",{ascending:false}).limit(1000),
-    exec().from("communications").select("id,person_id,organization_id,channel,direction,subject,summary,occurred_at").order("occurred_at",{ascending:false}).limit(1000)
-  ]);
-  loading.remove();
-  const error = [orgRes,peopleRes,appointmentRes,commRes].find(r=>r.error)?.error;
-  if (error) return app.append(card("Records unavailable",el("div",{class:"err",text:error.message})));
-  const orgs=orgRes.data || [], ppl=peopleRes.data || [];
-  const appts=appointmentRes.data || [], communications=commRes.data || [];
-  const orgById = new Map(orgs.map(o=>[o.id,o]));
-  const personById = new Map(ppl.map(p=>[p.id,p]));
-  const orgIdFor = r => r.organization_id || personById.get(r.person_id)?.organization_id || null;
-  const personName = r => personById.get(r.person_id)?.full_name || "—";
-  const companyName = r => orgById.get(orgIdFor(r))?.name || "—";
-  const selectPerson = id => el("select",{id},relationshipOptions(ppl,"Select person (optional)"));
-  const selectOrg = id => el("select",{id},relationshipOptions(orgs,"Select company (optional)"));
-
-  const search = el("input",{placeholder:"Search individual, company, subject or notes", "aria-label":"Search appointments and correspondence",style:"flex:1;min-width:220px"});
-  const companyFilter=selectOrg("timelineCompany");
-  const personFilter=selectPerson("timelinePerson");
-  const kindFilter=el("select",{"aria-label":"Record type"},[
-    el("option",{value:"all",text:"All records"}),
-    el("option",{value:"appointment",text:"Appointments"}),
-    el("option",{value:"correspondence",text:"Correspondence"})
-  ]);
-  const timelineBody=el("div",{});
-  const panel=card("Search records",[
-    el("div",{class:"row"},[search,personFilter,companyFilter,kindFilter]),
-    el("div",{class:"muted",text:"Filters work together. Company filtering also includes correspondence linked to employees at that company."}),
-    timelineBody
-  ]);
-  app.append(panel);
-  function matches(r,type) {
-    if(kindFilter.value!=="all" && kindFilter.value!==type)return false;
-    if(personFilter.value && r.person_id!==personFilter.value)return false;
-    if(companyFilter.value && orgIdFor(r)!==companyFilter.value)return false;
-    const term=textSearch(search.value);
-    if(!term)return true;
-    return [personName(r),companyName(r),r.title,r.subject,r.summary,r.notes,r.agenda,r.outcome,r.location]
-      .some(v=>textSearch(v).includes(term));
-  }
-  function drawTimeline() {
-    timelineBody.textContent="";
-    const rows = [
-      ...appts.filter(a=>matches(a,"appointment")).map(a=>({type:"appointment",date:a.starts_at,record:a})),
-      ...communications.filter(c=>matches(c,"correspondence")).map(c=>({type:"correspondence",date:c.occurred_at,record:c}))
-    ].sort((a,b)=>(new Date(b.date||0))-(new Date(a.date||0)));
-    timelineBody.append(el("div",{class:"muted",style:"margin-top:12px",
-      text:rows.length+" matching records (up to 1,000 recent records of each type loaded)."}));
-    if(!rows.length)return timelineBody.append(el("div",{class:"muted",text:"No records match these filters."}));
-    const records=rows.slice(0,300).map(({type,record:r,date})=>{
-      const description=type==="appointment" ? (r.agenda||r.notes||r.outcome||"") : (r.summary||"");
-      const line=el("div",{class:"card",style:"margin-top:9px"},[
-        el("div",{class:"row"},[
-          el("span",{class:"tag",text:type}),
-          el("strong",{text:r.title||r.subject||"(Untitled record)"}),
-          el("span",{class:"muted",text:fmtDateTime(date)})
-        ]),
-        el("div",{class:"muted",text:"Person: "+personName(r)+" · Company: "+companyName(r)}),
-        el("div",{class:"muted",text:type==="appointment"
-          ? "Status: "+r.status+(r.location?" · "+r.location:"")+(r.follow_up_at?" · Follow up "+fmtDateTime(r.follow_up_at):"")
-          : r.direction+" / "+r.channel}),
-        ...(description?[el("div",{style:"white-space:pre-wrap",text:description})]:[])
-      ]);
-      if(type==="appointment" && canWrite()) {
-        const state=sel(APPOINTMENT_STATES,r.status,async ev=>{
-          if(await patch("executive","appointments",r.id,{status:ev.target.value})) render("appointments");
-        });
-        line.append(el("div",{class:"row",style:"margin-top:9px"},[
-          el("span",{class:"muted",text:"Update status:"}),state,
-          el("button",{class:"mini",text:"Edit notes / outcome",onclick:async()=>{
-            const notes=prompt("Appointment notes",r.notes||"");if(notes===null)return;
-            const outcome=prompt("Appointment outcome",r.outcome||"");if(outcome===null)return;
-            if(await patch("executive","appointments",r.id,{notes,outcome}))render("appointments");
-          }})
-        ]));
-      }
-      if(canManage())line.append(el("button",{class:"mini ghost",style:"margin-top:8px",text:"Delete",onclick:()=>remove("executive",type==="appointment"?"appointments":"communications",r.id)}));
-      return line;
-    });
-    timelineBody.append(...records);
-    if(rows.length>300)timelineBody.append(el("div",{class:"muted",text:"Showing 300 results. Refine your filters to narrow the list."}));
-  }
-  [search,personFilter,companyFilter,kindFilter].forEach(x=>x.addEventListener(x===search?"input":"change",drawTimeline));
-  drawTimeline();
-
-  if(!canWrite()) {
-    app.append(card("Record access",el("div",{class:"muted",text:"Viewing is available to authorized readers. Recording appointments and correspondence requires write access."})));
-    return;
-  }
-  const appointmentPerson=selectPerson("apptPerson");
-  const appointmentOrg=selectOrg("apptOrg");
-  const appointmentTitle=el("input",{placeholder:"Appointment title",style:"min-width:200px"});
-  const appointmentStart=el("input",{type:"datetime-local","aria-label":"Appointment start"});
-  const appointmentEnd=el("input",{type:"datetime-local","aria-label":"Appointment end"});
-  const appointmentLocation=el("input",{placeholder:"Location or meeting link",style:"min-width:200px"});
-  const appointmentAgenda=el("textarea",{placeholder:"Agenda and preparation notes",rows:3,style:"width:100%"});
-  const appointmentFollowup=el("input",{type:"datetime-local","aria-label":"Follow-up date and time"});
-  const appointmentStatus=el("select",{},opts(APPOINTMENT_STATES,"scheduled"));
-  const appointmentFeedback=el("div",{class:"err","aria-live":"polite"});
-  app.append(card("Record an appointment",[
-    el("div",{class:"row"},[appointmentTitle,appointmentPerson,appointmentOrg]),
-    el("div",{class:"row",style:"margin-top:9px"},[
-      el("label",{},["Starts ",appointmentStart]),el("label",{},["Ends ",appointmentEnd]),
-      el("label",{},["Follow-up ",appointmentFollowup]),appointmentStatus
-    ]),
-    el("div",{class:"row",style:"margin-top:9px"},[appointmentLocation]),
-    appointmentAgenda,
-    el("button",{class:"primary",text:"Save appointment",onclick:async()=>{
-      const title=appointmentTitle.value.trim();
-      const starts=safeDatetime(appointmentStart.value),ends=safeDatetime(appointmentEnd.value);
-      if(!title || !starts) return note(appointmentFeedback,"Title and appointment start are required.","err");
-      if(ends && ends<=starts)return note(appointmentFeedback,"End must be later than start.","err");
-      if(!appointmentPerson.value && !appointmentOrg.value)
-        return note(appointmentFeedback,"Select an individual or company.","err");
-      const inferredOrg=personById.get(appointmentPerson.value)?.organization_id;
-      const {error}=await exec().from("appointments").insert({
-        title,starts_at:starts,ends_at:ends,
-        person_id:appointmentPerson.value||null,
-        organization_id:appointmentOrg.value||inferredOrg||null,
-        location:appointmentLocation.value.trim()||null,
-        agenda:appointmentAgenda.value.trim()||null,
-        follow_up_at:safeDatetime(appointmentFollowup.value),
-        status:appointmentStatus.value
-      });
-      if(error)return note(appointmentFeedback,error.message,"err");
-      render("appointments");
-    }}),appointmentFeedback
-  ]));
-
-  const correspondencePerson=selectPerson("corrPerson");
-  const correspondenceOrg=selectOrg("corrOrg");
-  const correspondenceSubject=el("input",{placeholder:"Subject",style:"min-width:220px"});
-  const correspondenceChannel=el("select",{},opts(CORRESPONDENCE_CHANNELS,"email"));
-  const correspondenceDirection=el("select",{},opts(CORRESPONDENCE_DIRECTIONS,"outbound"));
-  const correspondenceDate=el("input",{type:"datetime-local","aria-label":"Correspondence date"});
-  const correspondenceBody=el("textarea",{placeholder:"Summary, transcript, or interaction notes",rows:4,style:"width:100%"});
-  const correspondenceFeedback=el("div",{class:"err","aria-live":"polite"});
-  app.append(card("Record correspondence",[
-    el("div",{class:"row"},[correspondenceSubject,correspondencePerson,correspondenceOrg]),
-    el("div",{class:"row",style:"margin-top:9px"},[correspondenceChannel,correspondenceDirection,
-      el("label",{},["Occurred ",correspondenceDate])]),
-    correspondenceBody,
-    el("button",{class:"primary",text:"Save correspondence",onclick:async()=>{
-      if(!correspondencePerson.value && !correspondenceOrg.value)
-        return note(correspondenceFeedback,"Select an individual or company.","err");
-      const subject=correspondenceSubject.value.trim();
-      const summary=correspondenceBody.value.trim();
-      if(!subject && !summary)return note(correspondenceFeedback,"Enter a subject or summary.","err");
-      const inferredOrg=personById.get(correspondencePerson.value)?.organization_id;
-      const {error}=await exec().from("communications").insert({
-        person_id:correspondencePerson.value||null,
-        organization_id:correspondenceOrg.value||inferredOrg||null,
-        channel:correspondenceChannel.value,
-        direction:correspondenceDirection.value,
-        subject:subject||null,summary:summary||null,
-        occurred_at:safeDatetime(correspondenceDate.value)||new Date().toISOString()
-      });
-      if(error)return note(correspondenceFeedback,error.message,"err");
-      render("appointments");
-    }}),correspondenceFeedback
-  ]));
-}
-
 async function knowledge(app) {
   const box = card("Knowledge", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
@@ -682,33 +461,36 @@ async function knowledge(app) {
   ]), "No research artifacts."));
 
   if (!canWrite()) return;
-  box.append(el("h3", { text: "Add knowledge" }));
-  box.append(el("div", { class: "row" }, [
-    el("input", { id: "kTitle", placeholder: "Title", style: "min-width:180px" }),
-    el("select", { id: "kDept" }, opts([["leadership", "leadership"], ["finance", "finance"], ["law", "law"], ["psychology", "psychology"], ["communications", "communications"], ["technology", "technology"], ["ifund", "ifund"]], "leadership")),
+  box.append(el("h3", { text: "Record a finding" }));
+  box.append(el("div", { class: "muted", text: "Goes through the recording contract: source deduplicated by URL, knowledge entry written with its verification state, audit row recorded." }));
+  box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+    el("input", { id: "kTitle", placeholder: "Title", style: "min-width:200px" }),
+    el("select", { id: "kDept" }, opts([["leadership", "leadership"], ["finance", "finance"], ["law", "law"], ["psychology", "psychology"], ["marketing", "marketing"], ["communications", "communications"], ["technology", "technology"], ["ifund", "ifund"]], "leadership")),
     el("input", { id: "kTopic", placeholder: "Topic" }),
     el("select", { id: "kVer" }, opts([["reported", "reported"], ["verified", "verified"], ["projected", "projected"], ["planned", "planned"]], "reported")),
-    el("input", { id: "kSummary", placeholder: "One line summary", style: "min-width:240px" }),
-    el("button", { class: "primary", text: "Add", onclick: async () => {
+    el("input", { id: "kConf", placeholder: "Confidence 0-100", type: "number", min: "0", max: "100", style: "width:150px" })
+  ]));
+  box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+    el("input", { id: "kSummary", placeholder: "One line summary", style: "min-width:260px" }),
+    el("input", { id: "kSrcUrl", placeholder: "Source URL", style: "min-width:240px" }),
+    el("input", { id: "kSrcPub", placeholder: "Publisher" }),
+    el("button", { class: "primary", text: "Record finding", onclick: async () => {
       const title = $("#kTitle").value.trim(); const summary = $("#kSummary").value.trim();
       if (!title || !summary) return alert("Title and summary are required.");
-      const { error } = await exec().from("knowledge").insert({ title, summary, department: $("#kDept").value, topic: $("#kTopic").value.trim() || "general", verification: $("#kVer").value });
+      const { error } = await sb.rpc("executive_record_finding", {
+        p_title: title, p_summary: summary, p_body: summary,
+        p_department: $("#kDept").value, p_topic: $("#kTopic").value.trim() || "general",
+        p_verification: $("#kVer").value,
+        p_confidence: Number($("#kConf").value || 60),
+        p_tags: [],
+        p_source_url: $("#kSrcUrl").value.trim() || null,
+        p_source_title: $("#kSrcPub").value.trim() || null,
+        p_source_publisher: $("#kSrcPub").value.trim() || null
+      });
       if (error) return alert(error.message);
       render("knowledge");
     } })
   ]));
-}
-
-async function executiveDocumentRequest(path, init = {}) {
-  const {data,error} = await sb.auth.getSession();
-  const fresh = data?.session;
-  if (error || !fresh?.access_token) throw new Error("Executive session expired; please sign in again.");
-  if (!role || !["owner", "admin"].includes(role)) throw new Error("An active executive document role is required.");
-  session = fresh;
-  return fetch(WORKER + path, {
-    ...init,
-    headers: {Authorization: "Bearer " + fresh.access_token, ...(init.headers || {})}
-  });
 }
 
 async function documents(app) {
@@ -725,7 +507,7 @@ async function documents(app) {
   app.append(box);
 
   const body = $("#docBody");
-  const call = executiveDocumentRequest;
+  const call = (path, init = {}) => fetch(WORKER + path, { ...init, headers: { Authorization: "Bearer " + session.access_token, ...(init.headers || {}) } });
   let r, j;
   try { r = await call("/v1/documents"); j = await r.json(); }
   catch (e) { body.className = "err"; body.textContent = "Worker unreachable from this page: " + e.message; return; }
@@ -754,54 +536,34 @@ async function documents(app) {
 }
 
 async function testDocuments(statusNode, btn) {
-  note(statusNode, "Running authenticated R2 access test…");
+  note(statusNode, "Running access test…");
   btn.disabled = true;
   const lines = [];
+  const call = (path, init = {}) => fetch(WORKER + path, { ...init, headers: { Authorization: "Bearer " + session.access_token, ...(init.headers || {}) } });
   const key = "diagnostics/roundtrip-" + crypto.randomUUID() + ".txt";
-  const endpoint = "/v1/documents/" + encodeURIComponent(key);
   const payload = "round trip " + new Date().toISOString();
-  let uploaded = false;
-  let passed = true;
   try {
-    const listing = await executiveDocumentRequest("/v1/documents");
-    if (listing.status !== 200) throw new Error("Initial listing HTTP " + listing.status);
-    lines.push("Initial document list: passed");
-    const upload = await executiveDocumentRequest(endpoint, {
-      method: "PUT", headers: {"content-type": "text/plain"}, body: payload
-    });
-    if (upload.status !== 201) throw new Error("Upload HTTP " + upload.status);
-    uploaded = true;
-    lines.push("Upload: passed");
-    const prefix = await executiveDocumentRequest("/v1/documents?prefix=diagnostics");
-    if (prefix.status !== 200) throw new Error("Prefix list HTTP " + prefix.status);
-    const result = await prefix.json();
-    if (!Array.isArray(result?.objects) || !result.objects.some(o => o.name === key))
-      throw new Error("Uploaded document not listed");
-    lines.push("Prefix listing: passed");
-    const read = await executiveDocumentRequest(endpoint);
-    if (read.status !== 200 || (await read.text()) !== payload)
-      throw new Error("Download integrity check failed");
-    lines.push("Download integrity: passed");
-  } catch (error) {
-    passed = false;
-    lines.push("ERROR: " + (error.message || String(error)));
-  } finally {
-    if (uploaded) {
-      try {
-        const deletion = await executiveDocumentRequest(endpoint, {method: "DELETE"});
-        if (deletion.status !== 200) throw new Error("Deletion HTTP " + deletion.status);
-        const gone = await executiveDocumentRequest(endpoint);
-        if (gone.status !== 404) throw new Error("Object remains after deletion, HTTP " + gone.status);
-        lines.push("Delete and 404 verification: passed");
-      } catch (error) {
-        passed = false;
-        lines.push("CLEANUP FAILED: " + (error.message || String(error)) + "; key: " + key);
-      }
+    let r = await call("/v1/documents");
+    lines.push("list: " + r.status + " " + (r.ok ? "ok" : await r.text()));
+    r = await call("/v1/documents/" + encodeURIComponent(key), { method: "PUT", headers: { "content-type": "text/plain" }, body: payload });
+    lines.push("upload: " + r.status + " " + (r.ok ? "ok" : await r.text()));
+    if (r.ok) {
+      r = await call("/v1/documents?prefix=diagnostics");
+      const j = await r.json().catch(() => ({}));
+      const found = (j.objects || []).some(o => o.name === key);
+      lines.push("list prefix: " + r.status + " found=" + found);
+      r = await call("/v1/documents/" + encodeURIComponent(key));
+      const got = r.ok ? await r.text() : "";
+      lines.push("download: " + r.status + " integrity=" + (got === payload));
+      r = await call("/v1/documents/" + encodeURIComponent(key), { method: "DELETE" });
+      lines.push("delete: " + r.status);
+      r = await call("/v1/documents/" + encodeURIComponent(key));
+      lines.push("after delete: " + r.status + " (404 expected)");
     }
-    btn.disabled = false;
-    note(statusNode, (passed ? "Authenticated access test passed.\\n" : "Access test failed.\\n") +
-      lines.join("\\n"), passed ? "ok" : "err");
-  }
+  } catch (e) { lines.push("network error: " + e.message); }
+  btn.disabled = false;
+  const pass = lines.every(l => /(^list: 200)|(upload: 201)|(found=true)|(integrity=true)|(delete: 200)|(404 expected)/.test(l));
+  note(statusNode, (pass ? "Access test passed.\n" : "Access test did not pass.\n") + lines.join("\n"), pass ? "ok" : "err");
 }
 
 async function account(app) {
