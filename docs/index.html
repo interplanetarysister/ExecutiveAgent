@@ -139,6 +139,14 @@ async function boot() {
 
 async function enter() {
   await loadIdentity();
+  if (!role || !["owner", "admin", "researcher", "viewer"].includes(role)) {
+    $("#gate").classList.remove("hide");
+    $("#tabs").classList.add("hide");
+    $("#app").classList.add("hide");
+    $("#signout").classList.remove("hide");
+    msg("This account does not have active executive membership.");
+    return;
+  }
   $("#gate").classList.add("hide");
   $("#signout").classList.remove("hide");
   $("#tabs").classList.remove("hide");
@@ -510,6 +518,18 @@ async function knowledge(app) {
   ]));
 }
 
+async function executiveDocumentRequest(path, init = {}) {
+  const {data,error} = await sb.auth.getSession();
+  const fresh = data?.session;
+  if (error || !fresh?.access_token) throw new Error("Executive session expired; please sign in again.");
+  if (!role || !["owner", "admin"].includes(role)) throw new Error("An active executive document role is required.");
+  session = fresh;
+  return fetch(WORKER + path, {
+    ...init,
+    headers: {Authorization: "Bearer " + fresh.access_token, ...(init.headers || {})}
+  });
+}
+
 async function documents(app) {
   const status = el("div", { class: "muted", text: "" });
   const box = card("Private documents (Cloudflare R2)", [
@@ -524,7 +544,7 @@ async function documents(app) {
   app.append(box);
 
   const body = $("#docBody");
-  const call = (path, init = {}) => fetch(WORKER + path, { ...init, headers: { Authorization: "Bearer " + session.access_token, ...(init.headers || {}) } });
+  const call = executiveDocumentRequest;
   let r, j;
   try { r = await call("/v1/documents"); j = await r.json(); }
   catch (e) { body.className = "err"; body.textContent = "Worker unreachable from this page: " + e.message; return; }
@@ -553,34 +573,54 @@ async function documents(app) {
 }
 
 async function testDocuments(statusNode, btn) {
-  note(statusNode, "Running access test…");
+  note(statusNode, "Running authenticated R2 access test…");
   btn.disabled = true;
   const lines = [];
-  const call = (path, init = {}) => fetch(WORKER + path, { ...init, headers: { Authorization: "Bearer " + session.access_token, ...(init.headers || {}) } });
   const key = "diagnostics/roundtrip-" + crypto.randomUUID() + ".txt";
+  const endpoint = "/v1/documents/" + encodeURIComponent(key);
   const payload = "round trip " + new Date().toISOString();
+  let uploaded = false;
+  let passed = true;
   try {
-    let r = await call("/v1/documents");
-    lines.push("list: " + r.status + " " + (r.ok ? "ok" : await r.text()));
-    r = await call("/v1/documents/" + encodeURIComponent(key), { method: "PUT", headers: { "content-type": "text/plain" }, body: payload });
-    lines.push("upload: " + r.status + " " + (r.ok ? "ok" : await r.text()));
-    if (r.ok) {
-      r = await call("/v1/documents?prefix=diagnostics");
-      const j = await r.json().catch(() => ({}));
-      const found = (j.objects || []).some(o => o.name === key);
-      lines.push("list prefix: " + r.status + " found=" + found);
-      r = await call("/v1/documents/" + encodeURIComponent(key));
-      const got = r.ok ? await r.text() : "";
-      lines.push("download: " + r.status + " integrity=" + (got === payload));
-      r = await call("/v1/documents/" + encodeURIComponent(key), { method: "DELETE" });
-      lines.push("delete: " + r.status);
-      r = await call("/v1/documents/" + encodeURIComponent(key));
-      lines.push("after delete: " + r.status + " (404 expected)");
+    const listing = await executiveDocumentRequest("/v1/documents");
+    if (listing.status !== 200) throw new Error("Initial listing HTTP " + listing.status);
+    lines.push("Initial document list: passed");
+    const upload = await executiveDocumentRequest(endpoint, {
+      method: "PUT", headers: {"content-type": "text/plain"}, body: payload
+    });
+    if (upload.status !== 201) throw new Error("Upload HTTP " + upload.status);
+    uploaded = true;
+    lines.push("Upload: passed");
+    const prefix = await executiveDocumentRequest("/v1/documents?prefix=diagnostics");
+    if (prefix.status !== 200) throw new Error("Prefix list HTTP " + prefix.status);
+    const result = await prefix.json();
+    if (!Array.isArray(result?.objects) || !result.objects.some(o => o.name === key))
+      throw new Error("Uploaded document not listed");
+    lines.push("Prefix listing: passed");
+    const read = await executiveDocumentRequest(endpoint);
+    if (read.status !== 200 || (await read.text()) !== payload)
+      throw new Error("Download integrity check failed");
+    lines.push("Download integrity: passed");
+  } catch (error) {
+    passed = false;
+    lines.push("ERROR: " + (error.message || String(error)));
+  } finally {
+    if (uploaded) {
+      try {
+        const deletion = await executiveDocumentRequest(endpoint, {method: "DELETE"});
+        if (deletion.status !== 200) throw new Error("Deletion HTTP " + deletion.status);
+        const gone = await executiveDocumentRequest(endpoint);
+        if (gone.status !== 404) throw new Error("Object remains after deletion, HTTP " + gone.status);
+        lines.push("Delete and 404 verification: passed");
+      } catch (error) {
+        passed = false;
+        lines.push("CLEANUP FAILED: " + (error.message || String(error)) + "; key: " + key);
+      }
     }
-  } catch (e) { lines.push("network error: " + e.message); }
-  btn.disabled = false;
-  const pass = lines.every(l => /(^list: 200)|(upload: 201)|(found=true)|(integrity=true)|(delete: 200)|(404 expected)/.test(l));
-  note(statusNode, (pass ? "Access test passed.\n" : "Access test did not pass.\n") + lines.join("\n"), pass ? "ok" : "err");
+    btn.disabled = false;
+    note(statusNode, (passed ? "Authenticated access test passed.\\n" : "Access test failed.\\n") +
+      lines.join("\\n"), passed ? "ok" : "err");
+  }
 }
 
 async function account(app) {
