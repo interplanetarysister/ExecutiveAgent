@@ -253,6 +253,32 @@ async function overview(app) {
       return [o.title, el("span", { class: "tag", text: o.status }), el("div", {}, [day(o.deadline_at), " ", tag])];
     }), "No live opportunities.")));
   app.append(grid);
+
+  // Server-side scheduler refreshes these persisted alerts every 30 minutes.
+  const alertBox = card("Scheduled task deadline watch", el("div", {class:"muted",text:"Loading deadline alerts…"}));
+  app.append(alertBox);
+  const alerts = await exec().from("deadline_alerts")
+    .select("task_id,severity,due_at").is("resolved_at",null)
+    .order("due_at",{ascending:true}).limit(20);
+  alertBox.textContent = "";
+  alertBox.append(el("h2",{text:"Scheduled task deadline watch"}));
+  if(alerts.error) {
+    fail(alertBox,alerts.error);
+  } else {
+    const ids = (alerts.data || []).map(a=>a.task_id);
+    let titles = new Map();
+    if(ids.length) {
+      const taskNames=await exec().from("tasks").select("id,title,status").in("id",ids);
+      if(taskNames.error) fail(alertBox,taskNames.error);
+      else titles=new Map((taskNames.data||[]).map(t=>[t.id,t.title]));
+    }
+    alertBox.append(table(["task","severity","due date"],(alerts.data||[]).map(a=>[
+      titles.get(a.task_id)||"Task "+a.task_id.slice(0,8),
+      el("span",{class:a.severity==="overdue"?"tag hot":"tag",text:a.severity}),
+      day(a.due_at)
+    ]),"No tasks due within 72 hours or overdue."));
+    alertBox.append(el("div",{class:"muted",text:"Automatically reviewed every 30 minutes. Alerts reflect the latest scheduled refresh."}));
+  }
   app.append(card("Recent decisions", table(["decision", "status", "when"],
     (dec.data || []).map(d => [d.decision, d.status, day(d.decided_at)]), "No decisions recorded.")));
 }
