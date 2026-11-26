@@ -174,7 +174,7 @@ $("#savepw").onclick = async () => {
 $("#signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
 const TABS = [["overview", "Overview"], ["tasks", "Tasks"], ["funding", "Funding"],
-  ["relationships", "Relationships"], ["knowledge", "Knowledge"], ["documents", "Documents"], ["account", "Account"]];
+  ["relationships", "Relationships"], ["appointments", "Appointments & correspondence"], ["knowledge", "Knowledge"], ["documents", "Documents"], ["account", "Account"]];
 function buildTabs() {
   const nav = $("#tabs"); nav.textContent = "";
   for (const [id, label] of TABS) nav.append(el("button", { text: label, "aria-selected": String(id === "overview"), onclick: () => render(id) }));
@@ -184,7 +184,7 @@ function render(id) {
   const label = (TABS.find(t => t[0] === id) || TABS[0])[1];
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === label)));
   const app = $("#app"); app.textContent = "";
-  const fn = { overview, tasks, funding, relationships, knowledge, documents, account }[id] || overview;
+  const fn = { overview, tasks, funding, relationships, appointments, knowledge, documents, account }[id] || overview;
   fn(app).catch(e => app.append(el("div", { class: "err", text: "Could not render: " + (e.message || e) })));
 }
 function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
@@ -464,6 +464,193 @@ async function relationships(app) {
       if (error) return alert(error.message);
       render("relationships");
     } })
+  ]));
+}
+
+
+const APPOINTMENT_STATES = [["scheduled","scheduled"],["completed","completed"],["rescheduled","rescheduled"],["cancelled","cancelled"]];
+const CORRESPONDENCE_CHANNELS = [["email","email"],["phone","phone"],["meeting","meeting"],["video","video"],["message","message"],["letter","letter"],["other","other"]];
+const CORRESPONDENCE_DIRECTIONS = [["outbound","outbound"],["inbound","inbound"],["internal","internal"]];
+function textSearch(v) { return String(v || "").toLocaleLowerCase().trim(); }
+function safeDatetime(s) {
+  if (!s) return null;
+  const date = new Date(s);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+function relationshipOptions(rows, label) {
+  return [el("option",{value:"",text:label})].concat(rows.map(item=>
+    el("option",{value:item.id,text:item.name || item.full_name})));
+}
+function fmtDateTime(value) { return value ? new Date(value).toLocaleString() : "—"; }
+
+async function appointments(app) {
+  app.append(card("Appointments and correspondence",
+    el("div",{class:"muted",text:"Search meetings, correspondence, and follow-ups by person or company. Records are stored in the executive database."})));
+  const loading = card("Timeline",el("div",{class:"muted",text:"Loading appointments and interactions…"}));
+  app.append(loading);
+  const [orgRes, peopleRes, appointmentRes, commRes] = await Promise.all([
+    exec().from("organizations").select("id,name").order("name").limit(1000),
+    exec().from("people").select("id,full_name,organization_id").order("full_name").limit(1000),
+    exec().from("appointments").select("id,title,person_id,organization_id,starts_at,ends_at,location,meeting_link,agenda,notes,status,outcome,follow_up_at").order("starts_at",{ascending:false}).limit(1000),
+    exec().from("communications").select("id,person_id,organization_id,channel,direction,subject,summary,occurred_at").order("occurred_at",{ascending:false}).limit(1000)
+  ]);
+  loading.remove();
+  const error = [orgRes,peopleRes,appointmentRes,commRes].find(r=>r.error)?.error;
+  if (error) return app.append(card("Records unavailable",el("div",{class:"err",text:error.message})));
+  const orgs=orgRes.data || [], ppl=peopleRes.data || [];
+  const appts=appointmentRes.data || [], communications=commRes.data || [];
+  const orgById = new Map(orgs.map(o=>[o.id,o]));
+  const personById = new Map(ppl.map(p=>[p.id,p]));
+  const orgIdFor = r => r.organization_id || personById.get(r.person_id)?.organization_id || null;
+  const personName = r => personById.get(r.person_id)?.full_name || "—";
+  const companyName = r => orgById.get(orgIdFor(r))?.name || "—";
+  const selectPerson = id => el("select",{id},relationshipOptions(ppl,"Select person (optional)"));
+  const selectOrg = id => el("select",{id},relationshipOptions(orgs,"Select company (optional)"));
+
+  const search = el("input",{placeholder:"Search individual, company, subject or notes", "aria-label":"Search appointments and correspondence",style:"flex:1;min-width:220px"});
+  const companyFilter=selectOrg("timelineCompany");
+  const personFilter=selectPerson("timelinePerson");
+  const kindFilter=el("select",{"aria-label":"Record type"},[
+    el("option",{value:"all",text:"All records"}),
+    el("option",{value:"appointment",text:"Appointments"}),
+    el("option",{value:"correspondence",text:"Correspondence"})
+  ]);
+  const timelineBody=el("div",{});
+  const panel=card("Search records",[
+    el("div",{class:"row"},[search,personFilter,companyFilter,kindFilter]),
+    el("div",{class:"muted",text:"Filters work together. Company filtering also includes correspondence linked to employees at that company."}),
+    timelineBody
+  ]);
+  app.append(panel);
+  function matches(r,type) {
+    if(kindFilter.value!=="all" && kindFilter.value!==type)return false;
+    if(personFilter.value && r.person_id!==personFilter.value)return false;
+    if(companyFilter.value && orgIdFor(r)!==companyFilter.value)return false;
+    const term=textSearch(search.value);
+    if(!term)return true;
+    return [personName(r),companyName(r),r.title,r.subject,r.summary,r.notes,r.agenda,r.outcome,r.location]
+      .some(v=>textSearch(v).includes(term));
+  }
+  function drawTimeline() {
+    timelineBody.textContent="";
+    const rows = [
+      ...appts.filter(a=>matches(a,"appointment")).map(a=>({type:"appointment",date:a.starts_at,record:a})),
+      ...communications.filter(c=>matches(c,"correspondence")).map(c=>({type:"correspondence",date:c.occurred_at,record:c}))
+    ].sort((a,b)=>(new Date(b.date||0))-(new Date(a.date||0)));
+    timelineBody.append(el("div",{class:"muted",style:"margin-top:12px",
+      text:rows.length+" matching records (up to 1,000 recent records of each type loaded)."}));
+    if(!rows.length)return timelineBody.append(el("div",{class:"muted",text:"No records match these filters."}));
+    const records=rows.slice(0,300).map(({type,record:r,date})=>{
+      const description=type==="appointment" ? (r.agenda||r.notes||r.outcome||"") : (r.summary||"");
+      const line=el("div",{class:"card",style:"margin-top:9px"},[
+        el("div",{class:"row"},[
+          el("span",{class:"tag",text:type}),
+          el("strong",{text:r.title||r.subject||"(Untitled record)"}),
+          el("span",{class:"muted",text:fmtDateTime(date)})
+        ]),
+        el("div",{class:"muted",text:"Person: "+personName(r)+" · Company: "+companyName(r)}),
+        el("div",{class:"muted",text:type==="appointment"
+          ? "Status: "+r.status+(r.location?" · "+r.location:"")+(r.follow_up_at?" · Follow up "+fmtDateTime(r.follow_up_at):"")
+          : r.direction+" / "+r.channel}),
+        ...(description?[el("div",{style:"white-space:pre-wrap",text:description})]:[])
+      ]);
+      if(type==="appointment" && canWrite()) {
+        const state=sel(APPOINTMENT_STATES,r.status,async ev=>{
+          if(await patch("executive","appointments",r.id,{status:ev.target.value})) render("appointments");
+        });
+        line.append(el("div",{class:"row",style:"margin-top:9px"},[
+          el("span",{class:"muted",text:"Update status:"}),state,
+          el("button",{class:"mini",text:"Edit notes / outcome",onclick:async()=>{
+            const notes=prompt("Appointment notes",r.notes||"");if(notes===null)return;
+            const outcome=prompt("Appointment outcome",r.outcome||"");if(outcome===null)return;
+            if(await patch("executive","appointments",r.id,{notes,outcome}))render("appointments");
+          }})
+        ]));
+      }
+      if(canManage())line.append(el("button",{class:"mini ghost",style:"margin-top:8px",text:"Delete",onclick:()=>remove("executive",type==="appointment"?"appointments":"communications",r.id)}));
+      return line;
+    });
+    timelineBody.append(...records);
+    if(rows.length>300)timelineBody.append(el("div",{class:"muted",text:"Showing 300 results. Refine your filters to narrow the list."}));
+  }
+  [search,personFilter,companyFilter,kindFilter].forEach(x=>x.addEventListener(x===search?"input":"change",drawTimeline));
+  drawTimeline();
+
+  if(!canWrite()) {
+    app.append(card("Record access",el("div",{class:"muted",text:"Viewing is available to authorized readers. Recording appointments and correspondence requires write access."})));
+    return;
+  }
+  const appointmentPerson=selectPerson("apptPerson");
+  const appointmentOrg=selectOrg("apptOrg");
+  const appointmentTitle=el("input",{placeholder:"Appointment title",style:"min-width:200px"});
+  const appointmentStart=el("input",{type:"datetime-local","aria-label":"Appointment start"});
+  const appointmentEnd=el("input",{type:"datetime-local","aria-label":"Appointment end"});
+  const appointmentLocation=el("input",{placeholder:"Location or meeting link",style:"min-width:200px"});
+  const appointmentAgenda=el("textarea",{placeholder:"Agenda and preparation notes",rows:3,style:"width:100%"});
+  const appointmentFollowup=el("input",{type:"datetime-local","aria-label":"Follow-up date and time"});
+  const appointmentStatus=el("select",{},opts(APPOINTMENT_STATES,"scheduled"));
+  const appointmentFeedback=el("div",{class:"err","aria-live":"polite"});
+  app.append(card("Record an appointment",[
+    el("div",{class:"row"},[appointmentTitle,appointmentPerson,appointmentOrg]),
+    el("div",{class:"row",style:"margin-top:9px"},[
+      el("label",{},["Starts ",appointmentStart]),el("label",{},["Ends ",appointmentEnd]),
+      el("label",{},["Follow-up ",appointmentFollowup]),appointmentStatus
+    ]),
+    el("div",{class:"row",style:"margin-top:9px"},[appointmentLocation]),
+    appointmentAgenda,
+    el("button",{class:"primary",text:"Save appointment",onclick:async()=>{
+      const title=appointmentTitle.value.trim();
+      const starts=safeDatetime(appointmentStart.value),ends=safeDatetime(appointmentEnd.value);
+      if(!title || !starts) return note(appointmentFeedback,"Title and appointment start are required.","err");
+      if(ends && ends<=starts)return note(appointmentFeedback,"End must be later than start.","err");
+      if(!appointmentPerson.value && !appointmentOrg.value)
+        return note(appointmentFeedback,"Select an individual or company.","err");
+      const inferredOrg=personById.get(appointmentPerson.value)?.organization_id;
+      const {error}=await exec().from("appointments").insert({
+        title,starts_at:starts,ends_at:ends,
+        person_id:appointmentPerson.value||null,
+        organization_id:appointmentOrg.value||inferredOrg||null,
+        location:appointmentLocation.value.trim()||null,
+        agenda:appointmentAgenda.value.trim()||null,
+        follow_up_at:safeDatetime(appointmentFollowup.value),
+        status:appointmentStatus.value
+      });
+      if(error)return note(appointmentFeedback,error.message,"err");
+      render("appointments");
+    }}),appointmentFeedback
+  ]));
+
+  const correspondencePerson=selectPerson("corrPerson");
+  const correspondenceOrg=selectOrg("corrOrg");
+  const correspondenceSubject=el("input",{placeholder:"Subject",style:"min-width:220px"});
+  const correspondenceChannel=el("select",{},opts(CORRESPONDENCE_CHANNELS,"email"));
+  const correspondenceDirection=el("select",{},opts(CORRESPONDENCE_DIRECTIONS,"outbound"));
+  const correspondenceDate=el("input",{type:"datetime-local","aria-label":"Correspondence date"});
+  const correspondenceBody=el("textarea",{placeholder:"Summary, transcript, or interaction notes",rows:4,style:"width:100%"});
+  const correspondenceFeedback=el("div",{class:"err","aria-live":"polite"});
+  app.append(card("Record correspondence",[
+    el("div",{class:"row"},[correspondenceSubject,correspondencePerson,correspondenceOrg]),
+    el("div",{class:"row",style:"margin-top:9px"},[correspondenceChannel,correspondenceDirection,
+      el("label",{},["Occurred ",correspondenceDate])]),
+    correspondenceBody,
+    el("button",{class:"primary",text:"Save correspondence",onclick:async()=>{
+      if(!correspondencePerson.value && !correspondenceOrg.value)
+        return note(correspondenceFeedback,"Select an individual or company.","err");
+      const subject=correspondenceSubject.value.trim();
+      const summary=correspondenceBody.value.trim();
+      if(!subject && !summary)return note(correspondenceFeedback,"Enter a subject or summary.","err");
+      const inferredOrg=personById.get(correspondencePerson.value)?.organization_id;
+      const {error}=await exec().from("communications").insert({
+        person_id:correspondencePerson.value||null,
+        organization_id:correspondenceOrg.value||inferredOrg||null,
+        channel:correspondenceChannel.value,
+        direction:correspondenceDirection.value,
+        subject:subject||null,summary:summary||null,
+        occurred_at:safeDatetime(correspondenceDate.value)||new Date().toISOString()
+      });
+      if(error)return note(correspondenceFeedback,error.message,"err");
+      render("appointments");
+    }}),correspondenceFeedback
   ]));
 }
 
