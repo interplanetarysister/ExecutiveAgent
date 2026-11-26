@@ -1,3 +1,7 @@
+-- SUPERSEDED 2026-11-26. This file was never applied to project bimmfmydbmooarobilsq and is not
+-- valid PostgreSQL (`enable row level security on <table>` is not a statement). It is retained for
+-- history only. Do not apply it. The canonical schema is 20261126_executive_core.sql.
+
 -- Enable useful extensions
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
