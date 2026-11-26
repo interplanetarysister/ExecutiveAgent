@@ -20,13 +20,13 @@ async function authenticate(request, env) {
     return { error: json({error: "Executive owner authentication has not been configured"}, 503) };
   }
   let base;
-  try { base = new URL(env.SUPABASE_URL); } catch { return { error: json({error: "Invalid authentication configuration"}, 503) }; }
+  try { base = new URL(String(env.SUPABASE_URL).trim()); } catch { return { error: json({error: "Invalid authentication configuration"}, 503) }; }
   if (base.protocol !== "https:" || !base.hostname.endsWith(".supabase.co") || base.pathname !== "/") {
     return { error: json({error: "Invalid authentication configuration"}, 503) };
   }
   try {
     const response = await fetch(new URL("/auth/v1/user", base), {
-      headers: { "apikey": env.SUPABASE_PUBLISHABLE_KEY, "authorization": "Bearer " + match[1] },
+      headers: { "apikey": String(env.SUPABASE_PUBLISHABLE_KEY).trim(), "authorization": "Bearer " + match[1] },
       redirect: "error"
     });
     if (!response.ok) return { error: json({error: "Invalid session"}, 401) };
@@ -40,7 +40,7 @@ async function authenticate(request, env) {
     membershipUrl.searchParams.set("user_id","eq."+user.id);
     membershipUrl.searchParams.set("select","role,active");
     const membershipResponse = await fetch(membershipUrl,{
-      headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+match[1]},redirect:"error"
+      headers:{apikey:String(env.SUPABASE_PUBLISHABLE_KEY).trim(),authorization:"Bearer "+match[1]},redirect:"error"
     });
     if (!membershipResponse.ok) return {error:json({error:"Membership verification unavailable"},503)};
     const memberships = await membershipResponse.json();
@@ -48,7 +48,8 @@ async function authenticate(request, env) {
       return {error:json({error:"Executive membership required"},403)};
     }
     return { id: user.id };
-  } catch {
+  } catch (error) {
+    console.error("Executive auth upstream failure", error?.name || "error");
     return { error: json({error: "Authentication service unavailable"}, 503) };
   }
 }
