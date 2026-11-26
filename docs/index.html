@@ -102,7 +102,7 @@ const day = (d) => d ? new Date(d).toLocaleDateString(undefined, { year: "numeri
 const esc = (s) => String(s ?? "");
 
 let session = null, me = null, role = null;
-let workerUrl = localStorage.getItem("workerUrl") || "";
+const workerUrl = "https://executive-agent-research.michelle-rogers-executive.workers.dev";
 
 function msg(t) { $("#gateMsg").textContent = t || ""; }
 
@@ -133,6 +133,11 @@ async function boot() {
 
 async function enter() {
   await loadIdentity();
+  if (!role) {
+    msg("Your account has no active executive membership. Contact the project owner.");
+    $("#signout").classList.remove("hide");
+    return;
+  }
   $("#gate").classList.add("hide");
   $("#signout").classList.remove("hide");
   $("#tabs").classList.remove("hide");
@@ -296,15 +301,10 @@ async function research(app) {
 
 async function documents(app) {
   const box = card("Private documents (Cloudflare R2)", [
-    el("div", { class: "muted", text: "Served by the executive-agent-research Worker. Set its URL once per browser." }),
-    el("div", { class: "row", style: "margin-top:10px" }, [
-      el("input", { id: "wUrl", placeholder: "https://executive-agent-research.<subdomain>.workers.dev", value: workerUrl, style: "min-width:340px" }),
-      el("button", { text: "Save", onclick: () => { workerUrl = $("#wUrl").value.trim().replace(/\/$/, ""); localStorage.setItem("workerUrl", workerUrl); render("documents"); } })
-    ]),
-    el("div", { id: "docList", class: "muted", style: "margin-top:12px", text: workerUrl ? "Loading…" : "No Worker URL set yet." })
+    el("div", { class: "muted", text: "Connected to the dedicated executive Cloudflare R2 Worker. Authentication uses your current Supabase session." }),
+    el("div", { id: "docList", class: "muted", style: "margin-top:12px", text: "Loading…" })
   ]);
   app.append(box);
-  if (!workerUrl) return;
   const call = (path, opts = {}) => fetch(workerUrl + path, { ...opts, headers: { Authorization: "Bearer " + session.access_token, ...(opts.headers || {}) } });
   try {
     const r = await call("/v1/documents");
@@ -313,15 +313,28 @@ async function documents(app) {
     if (!r.ok) { list.className = "err"; list.textContent = j.error || ("HTTP " + r.status); return; }
     list.className = "";
     if (!j.objects?.length) { list.className = "muted"; list.textContent = "No documents stored."; }
-    else list.append(table(["name", "size", ""], j.objects.map(o => [o.name, o.size, el("button", { text: "open", onclick: async () => {
-      const rr = await call("/v1/documents/" + encodeURIComponent(o.name));
-      if (!rr.ok) return alert("Could not open document");
-      const b = await rr.blob(); const a = el("a", { href: URL.createObjectURL(b), download: o.name.split("/").pop() }); a.click();
-    } })])));
+    else list.append(table(["name", "size", ""], j.objects.map(o => [o.name, o.size, el("div", {class:"row"}, [
+      el("button", { text: "Download", onclick: async () => {
+        const rr = await call("/v1/documents/" + encodeURIComponent(o.name));
+        if (!rr.ok) return alert("Could not download document");
+        const b = await rr.blob(); const uri = URL.createObjectURL(b);
+        const a = el("a", { href: uri, download: o.name.split("/").pop() }); a.click();
+        setTimeout(() => URL.revokeObjectURL(uri), 60000);
+      } }),
+      el("button", {text:"Delete", onclick: async () => {
+        if (!confirm("Permanently delete " + o.name + "?")) return;
+        const rr = await call("/v1/documents/" + encodeURIComponent(o.name), {method:"DELETE"});
+        if (!rr.ok) return alert("Could not delete document");
+        render("documents");
+      }})
+    ])])));
     const file = el("input", { type: "file" });
     list.append(el("div", { class: "row", style: "margin-top:12px" }, [file, el("button", { class: "primary", text: "Upload", onclick: async () => {
       const f = file.files[0]; if (!f) return;
-      const rr = await call("/v1/documents/" + encodeURIComponent(f.name), { method: "PUT", headers: { "content-type": f.type || "application/octet-stream" }, body: f });
+      const ext = f.name.split(".").pop().toLowerCase();
+      const mime = ({pdf:"application/pdf",txt:"text/plain",md:"text/markdown",markdown:"text/markdown",json:"application/json"})[ext];
+      if (!mime) return alert("Supported file formats: PDF, TXT, MD, JSON.");
+      const rr = await call("/v1/documents/" + encodeURIComponent(f.name), { method: "PUT", headers: { "content-type": mime }, body: f });
       const jj = await rr.json().catch(() => ({}));
       if (!rr.ok) return alert(jj.error || ("HTTP " + rr.status));
       render("documents");
