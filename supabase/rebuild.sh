@@ -32,6 +32,7 @@ MIGRATIONS=(
   "executiveagent/supabase/migrations/20261126_executive_core.sql"
   "supabase/migrations/20261126_executive_foundation.sql"
   "supabase/migrations/20261126_align_executive_member_rls.sql"
+  "supabase/migrations/20261127_repair_audit_log_target_columns.sql"
   "supabase/migrations/20261126_member_write_policies.sql"
   "supabase/migrations/20261126_enable_member_task_writes.sql"
   "supabase/migrations/20261126_reconcile_canonical.sql"

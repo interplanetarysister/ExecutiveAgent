@@ -52,7 +52,21 @@ which applies exactly this manifest.
   tables it re-policies come from step 1.
 - **Header status:** Applied 2026-11-26 to project `bimmfmydbmooarobilsq`.
 
-### 4. `supabase/migrations/20261126_member_write_policies.sql`
+### 4. `supabase/migrations/20261127_repair_audit_log_target_columns.sql`
+
+- **Purpose:** Repair added 2026-11-27. Adds `target_type` and
+  `target_id` to `executive.audit_log` at the point in the apply order
+  where they are first needed: the member write policies (step 5) close
+  with an audit insert naming both columns, but the core migration
+  creates `audit_log` without them and they were previously only added
+  by the reconcile migration (step 7). Idempotent — a no-op wherever the
+  reconcile migration has already run, including the live project.
+- **Prerequisites:** Requires the core schema (step 1, for
+  `executive.audit_log`).
+- **Header status:** Source-only; not separately applied to the live
+  project (no-op there by design).
+
+### 5. `supabase/migrations/20261126_member_write_policies.sql`
 
 - **Purpose:** Adds member insert / update / delete policies for the
   `executive` tables — write access via `public.executive_can('write')`
@@ -62,17 +76,17 @@ which applies exactly this manifest.
   migration (step 2, for `public.executive_can()`).
 - **Header status:** Applied 2026-11-26.
 
-### 5. `supabase/migrations/20261126_enable_member_task_writes.sql`
+### 6. `supabase/migrations/20261126_enable_member_task_writes.sql`
 
 - **Purpose:** Grants `insert, update` on `executive.tasks` to the
   `authenticated` role. PostgreSQL requires both table privileges and an
   RLS policy for member task writes; this supplies the privilege half.
   No grant is made to `anon`.
 - **Prerequisites:** Requires the core schema (step 1, for
-  `executive.tasks`) and the member write policies (step 4).
+  `executive.tasks`) and the member write policies (step 5).
 - **Header status:** Applied 2026-11-26.
 
-### 6. `supabase/migrations/20261126_reconcile_canonical.sql`
+### 7. `supabase/migrations/20261126_reconcile_canonical.sql`
 
 - **Purpose:** Establishes one canonical home per domain: turns
   `public.executive_audit_events` into a **view** over
@@ -87,19 +101,19 @@ which applies exactly this manifest.
   the rebuild against the production project is **not** a no-op. See the
   safety note in `rebuild.sh`.
 
-### 7. `supabase/migrations/20261127_veritas_agents_registry.sql`
+### 8. `supabase/migrations/20261127_veritas_agents_registry.sql`
 
 - **Purpose:** Veritas agents registry (added after the 2026-11-26
   canonical set).
 - **Prerequisites:** Requires the canonical set above, in particular the
-  reconcile migration (step 6).
+  reconcile migration (step 7).
 
-### 8. `supabase/migrations/20261127_veritas_nexus_domain.sql`
+### 9. `supabase/migrations/20261127_veritas_nexus_domain.sql`
 
 - **Purpose:** Veritas Nexus domain schema (added after the 2026-11-26
   canonical set).
 - **Prerequisites:** Requires the canonical set above, in particular the
-  reconcile migration (step 6) and the Veritas agents registry (step 7).
+  reconcile migration (step 7) and the Veritas agents registry (step 8).
 
 ## DO NOT APPLY
 
