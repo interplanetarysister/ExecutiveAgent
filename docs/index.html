@@ -172,8 +172,9 @@ $("#signout").onclick = async () => { await sb.auth.signOut(); location.reload()
 
 const TABS = [
   ["overview", "Overview"], ["funding", "Funding"], ["tasks", "Tasks"],
-  ["knowledge", "Knowledge"], ["research", "Research"], ["documents", "Documents"],
-  ["account", "Account"]
+  ["agents", "Agents"], ["knowledge", "Knowledge"], ["research", "Research"],
+  ["schedule", "Schedule"], ["awards", "Awards"], ["judging", "Judging"],
+  ["certified", "Certified"], ["documents", "Documents"], ["account", "Account"]
 ];
 function buildTabs() {
   const nav = $("#tabs"); nav.textContent = "";
@@ -184,7 +185,7 @@ function buildTabs() {
 function render(id) {
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === (TABS.find(t => t[0] === id) || [])[1])));
   const app = $("#app"); app.textContent = "";
-  ({ overview, funding, tasks, knowledge, research, documents, account }[id] || overview)(app);
+  ({ overview, funding, tasks, agents, knowledge, research, schedule, awards, judging, certified, documents, account }[id] || overview)(app);
 }
 function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
 function table(headers, rows, empty) {
@@ -297,6 +298,43 @@ async function research(app) {
   else box.append(table(["title", "kind", "verified", "source"],
     (data || []).map(r => [r.title, r.kind, r.verified ? "yes" : "no", r.source_url ? el("a", { href: r.source_url, target: "_blank", rel: "noopener", text: "link", style: "color:var(--accent)" }) : ""]),
     "No research recorded yet."));
+
+  const vault = card("Research vault — agent submissions", el("div", { class: "muted", text: "Loading…" }));
+  app.append(vault);
+  const [{ data: entries, error: ee }, { data: agentRows }] = await Promise.all([
+    sb.schema("executive").from("research_entries").select("id,title,topic,domain,agent_name,status,trust_score,created_at").order("created_at", { ascending: false }).limit(100),
+    sb.schema("executive").from("agents").select("id,name").order("name")
+  ]);
+  vault.textContent = ""; vault.append(el("h2", { text: "Research vault — agent submissions" }));
+  if (ee) fail(vault, ee);
+  else vault.append(table(["title", "topic", "agent", "status", "trust"],
+    (entries || []).map(r => [r.title, esc(r.topic || ""), esc(r.agent_name || ""), r.status, r.trust_score ?? ""]),
+    "No research entries filed yet."));
+  const canWrite = role && ["owner", "admin", "researcher"].includes(role);
+  if (canWrite) {
+    vault.append(el("div", { class: "muted", style: "margin-top:14px", text: "File a research entry — the summary is the claim the verifier will check" }));
+    vault.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "eTitle", placeholder: "Entry title" }),
+      el("input", { id: "eTopic", placeholder: "Topic" }),
+      el("select", { id: "eDomain" }, ["technology", "industry", "policy", "other"].map(v => el("option", { value: v, text: v }))),
+      el("select", { id: "eAgent" }, [el("option", { value: "", text: "No agent" }), ...(agentRows || []).map(a => el("option", { value: a.id, text: a.name }))])
+    ]));
+    vault.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "eSummary", placeholder: "Summary — the claim", style: "min-width:320px" }),
+      el("button", { class: "primary", text: "File entry", onclick: async () => {
+        const title = $("#eTitle").value.trim(); if (!title) return;
+        const agentId = $("#eAgent").value || null;
+        const agent = (agentRows || []).find(a => a.id === agentId);
+        const { error } = await sb.schema("executive").from("research_entries").insert({
+          title, topic: $("#eTopic").value.trim() || null, domain: $("#eDomain").value,
+          summary: $("#eSummary").value.trim() || null,
+          agent_id: agentId, agent_name: agent ? agent.name : null, owner_id: me.id
+        });
+        if (error) return alert(error.message);
+        render("research");
+      } })
+    ]));
+  }
 }
 
 async function documents(app) {
@@ -340,6 +378,280 @@ async function documents(app) {
       render("documents");
     } })]));
   } catch (e) { const list = $("#docList"); list.className = "err"; list.textContent = "Worker unreachable from this page: " + e.message; }
+}
+
+const canWriteRole = () => role && ["owner", "admin", "researcher"].includes(role);
+const canManageRole = () => role && ["owner", "admin"].includes(role);
+
+async function agents(app) {
+  const box = card("Agents — registry", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const { data, error } = await sb.schema("executive").from("agents")
+    .select("name,role,host,category,status,purpose,runtime,model,submission_count,last_submission_at,is_active")
+    .order("sort_order").order("name").limit(100);
+  box.textContent = ""; box.append(el("h2", { text: "Agents — registry" }));
+  if (error) fail(box, error);
+  else box.append(table(["agent", "purpose", "runtime / host", "category", "status", "submissions", "model"],
+    (data || []).map(a => [a.name, esc(a.purpose || a.role || ""), esc([a.runtime, a.host].filter(Boolean).join(" · ")), esc(a.category || ""), a.status + (a.is_active === false ? " (chat off)" : ""), a.submission_count ?? 0, esc(a.model || "")]),
+    "No agents registered yet."));
+  box.append(el("div", { class: "muted", style: "margin-top:10px", text: "Registry entries are the agents that file research (Veritas Version B). An entry may also carry chat configuration (Version A: category, model, system prompt) for agents members can talk to. API keys are never shown or stored here in clear text — only a SHA-256 hash is kept, set outside the console." }));
+  if (canWriteRole()) {
+    box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Register an agent" }));
+    box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "aName", placeholder: "Agent name" }),
+      el("input", { id: "aPurpose", placeholder: "Purpose" }),
+      el("input", { id: "aRuntime", placeholder: "Runtime" }),
+      el("select", { id: "aCategory" }, [["", "No chat category"], ["executive", "executive"], ["research", "research"], ["compliance", "compliance"], ["evaluation", "evaluation"]].map(([v, t]) => el("option", { value: v, text: t }))),
+      el("input", { id: "aModel", placeholder: "Chat model (optional)" })
+    ]));
+    box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("textarea", { id: "aPrompt", placeholder: "System prompt (chat configuration, optional)", style: "min-width:420px", rows: "3" }),
+      el("button", { class: "primary", text: "Register", onclick: async () => {
+        const name = $("#aName").value.trim(); if (!name) return;
+        const model = $("#aModel").value.trim();
+        const { error } = await sb.schema("executive").from("agents").insert({
+          name, purpose: $("#aPurpose").value.trim() || null, runtime: $("#aRuntime").value.trim() || null,
+          category: $("#aCategory").value || null, ...(model ? { model } : {}),
+          system_prompt: $("#aPrompt").value.trim() || null
+        });
+        if (error) return alert(error.message);
+        render("agents");
+      } })
+    ]));
+  }
+}
+
+async function schedule(app) {
+  const box = card("Review schedule", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const [{ data, error }, { data: entries }] = await Promise.all([
+    sb.schema("executive").from("review_schedules").select("id,entry_id,title,agent_name,due_date,interval_days,status,completed_at").order("due_date").limit(100),
+    sb.schema("executive").from("research_entries").select("id,title,agent_name").order("created_at", { ascending: false }).limit(100)
+  ]);
+  const entryById = Object.fromEntries((entries || []).map(e => [e.id, e]));
+  box.textContent = ""; box.append(el("h2", { text: "Review schedule" }));
+  if (error) fail(box, error);
+  else box.append(table(["entry", "agent", "due", "every (days)", "status"],
+    (data || []).map(s => [esc(s.title || entryById[s.entry_id]?.title || ""), esc(s.agent_name || entryById[s.entry_id]?.agent_name || ""), day(s.due_date), s.interval_days, s.completed_at ? "completed" : s.status]),
+    "No reviews scheduled yet."));
+  if (canWriteRole() && entries?.length) {
+    box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Schedule a re-verification" }));
+    box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("select", { id: "sEntry" }, entries.map(e => el("option", { value: e.id, text: e.title }))),
+      el("input", { id: "sDue", type: "date" }),
+      el("input", { id: "sInterval", type: "number", value: "7", style: "width:90px" }),
+      el("button", { class: "primary", text: "Schedule", onclick: async () => {
+        const entry = entryById[$("#sEntry").value]; if (!entry) return;
+        const due = $("#sDue").value; if (!due) return alert("Pick a due date.");
+        const { error } = await sb.schema("executive").from("review_schedules").insert({
+          entry_id: entry.id, owner_id: me.id, title: entry.title, agent_name: entry.agent_name,
+          due_date: due, interval_days: Number($("#sInterval").value) || 7
+        });
+        if (error) return alert(error.message);
+        render("schedule");
+      } })
+    ]));
+  }
+}
+
+async function awards(app) {
+  const box = card("Award categories", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const { data: cats, error } = await sb.schema("executive").from("award_categories")
+    .select("id,name,tagline,cycle,year,status,total_points").order("sort_order").order("name").limit(100);
+  const catById = Object.fromEntries((cats || []).map(c => [c.id, c]));
+  box.textContent = ""; box.append(el("h2", { text: "Award categories" }));
+  if (error) fail(box, error);
+  else box.append(table(["category", "cycle", "status", "points"],
+    (cats || []).map(c => [c.name, esc([c.cycle, c.year].filter(Boolean).join(" ")), c.status, c.total_points]),
+    "No award categories yet."));
+  if (canManageRole()) {
+    box.append(el("div", { class: "row", style: "margin-top:14px" }, [
+      el("input", { id: "cName", placeholder: "Category name" }),
+      el("input", { id: "cSlug", placeholder: "slug" }),
+      el("input", { id: "cCycle", placeholder: "Cycle" }),
+      el("input", { id: "cYear", type: "number", placeholder: "Year", style: "width:100px" }),
+      el("button", { class: "primary", text: "Add category", onclick: async () => {
+        const name = $("#cName").value.trim(); if (!name) return;
+        const slug = $("#cSlug").value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const { error } = await sb.schema("executive").from("award_categories").insert({
+          name, slug, cycle: $("#cCycle").value.trim() || null,
+          year: Number($("#cYear").value) || null
+        });
+        if (error) return alert(error.message);
+        render("awards");
+      } })
+    ]));
+  }
+
+  const nbox = card("Nominations", el("div", { class: "muted", text: "Loading…" }));
+  app.append(nbox);
+  const { data: subs, error: se } = await sb.schema("executive").from("submissions")
+    .select("id,category_id,nominee_name,nominee_type,nominator_name,status,created_at").order("created_at", { ascending: false }).limit(100);
+  nbox.textContent = ""; nbox.append(el("h2", { text: "Nominations" }));
+  if (se) fail(nbox, se);
+  else nbox.append(table(["nominee", "category", "type", "nominator", "status"],
+    (subs || []).map(s => [s.nominee_name, esc(catById[s.category_id]?.name || ""), s.nominee_type, esc(s.nominator_name || ""), s.status]),
+    "No nominations yet."));
+  if (canWriteRole() && cats?.length) {
+    nbox.append(el("div", { class: "row", style: "margin-top:14px" }, [
+      el("select", { id: "nCat" }, cats.map(c => el("option", { value: c.id, text: c.name }))),
+      el("input", { id: "nName", placeholder: "Nominee name" }),
+      el("select", { id: "nType" }, ["platform", "business", "individual", "agent", "technology"].map(v => el("option", { value: v, text: v }))),
+      el("input", { id: "nBy", placeholder: "Nominator" }),
+      el("button", { class: "primary", text: "Nominate", onclick: async () => {
+        const nominee = $("#nName").value.trim(); if (!nominee) return;
+        const cat = catById[$("#nCat").value];
+        const { error } = await sb.schema("executive").from("submissions").insert({
+          category_id: cat.id, category_name: cat.name, nominee_name: nominee,
+          nominee_type: $("#nType").value, nominator_name: $("#nBy").value.trim() || null,
+          summary: $("#nSummary").value.trim() || null
+        });
+        if (error) return alert(error.message);
+        render("awards");
+      } })
+    ]));
+    nbox.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "nSummary", placeholder: "Why this nominee? (summary)", style: "min-width:420px" })
+    ]));
+  }
+}
+
+async function judging(app) {
+  if (!canManageRole()) {
+    app.append(card("Judging", el("div", { class: "muted", text: "Judging criteria, judgments, and criteria change requests are board data. They are restricted to owner and admin accounts, in the database as well as here." })));
+    return;
+  }
+  const { data: cats } = await sb.schema("executive").from("award_categories").select("id,name").order("sort_order").order("name");
+  const catById = Object.fromEntries((cats || []).map(c => [c.id, c]));
+
+  const cbox = card("Judging criteria — board only", el("div", { class: "muted", text: "Loading…" }));
+  app.append(cbox);
+  const critHost = el("div", { style: "margin-top:12px" });
+  async function loadCriteria() {
+    critHost.textContent = "";
+    const catId = $("#jCat")?.value; if (!catId) return;
+    const { data, error } = await sb.schema("executive").from("judging_criteria")
+      .select("name,max_points,definition,sort_order").eq("category_id", catId).order("sort_order").limit(100);
+    if (error) return fail(critHost, error);
+    critHost.append(table(["criterion", "max points", "definition"],
+      (data || []).map(c => [c.name, c.max_points, esc(c.definition || "")]), "No criteria for this category yet."));
+  }
+  cbox.textContent = ""; cbox.append(el("h2", { text: "Judging criteria — board only" }));
+  if (!cats?.length) cbox.append(el("div", { class: "muted", text: "Create an award category first." }));
+  else {
+    cbox.append(el("div", { class: "row" }, [
+      el("select", { id: "jCat", onchange: loadCriteria }, cats.map(c => el("option", { value: c.id, text: c.name })))
+    ]));
+    cbox.append(critHost);
+    await loadCriteria();
+    cbox.append(el("div", { class: "row", style: "margin-top:14px" }, [
+      el("input", { id: "jcName", placeholder: "Criterion name" }),
+      el("input", { id: "jcMax", type: "number", value: "25", style: "width:90px" }),
+      el("input", { id: "jcDef", placeholder: "Definition", style: "min-width:280px" }),
+      el("button", { class: "primary", text: "Add criterion", onclick: async () => {
+        const name = $("#jcName").value.trim(); if (!name) return;
+        const { error } = await sb.schema("executive").from("judging_criteria").insert({
+          category_id: $("#jCat").value, name, max_points: Number($("#jcMax").value) || 25,
+          definition: $("#jcDef").value.trim() || null
+        });
+        if (error) return alert(error.message);
+        render("judging");
+      } })
+    ]));
+  }
+
+  const jbox = card("Judgments — board only", el("div", { class: "muted", text: "Loading…" }));
+  app.append(jbox);
+  const [{ data: judgments, error: je }, { data: subs }] = await Promise.all([
+    sb.schema("executive").from("judgments").select("id,submission_id,category_id,recommendation,total_points,max_points,percentage,status,judged_at").order("created_at", { ascending: false }).limit(100),
+    sb.schema("executive").from("submissions").select("id,nominee_name").limit(200)
+  ]);
+  const subById = Object.fromEntries((subs || []).map(s => [s.id, s]));
+  jbox.textContent = ""; jbox.append(el("h2", { text: "Judgments — board only" }));
+  if (je) fail(jbox, je);
+  else jbox.append(table(["nominee", "category", "recommendation", "points", "%", "status", ""],
+    (judgments || []).map(j => [
+      esc(subById[j.submission_id]?.nominee_name || ""), esc(catById[j.category_id]?.name || ""),
+      esc(j.recommendation || ""), j.total_points != null ? (j.total_points + " / " + (j.max_points ?? "")) : "",
+      j.percentage ?? "", j.status,
+      j.status === "draft" ? el("div", { class: "row" }, [
+        el("button", { text: "Approve", onclick: async () => {
+          const { error } = await sb.schema("executive").from("judgments").update({ status: "approved" }).eq("id", j.id);
+          if (error) return alert(error.message);
+          render("judging");
+        } }),
+        el("button", { text: "Overrule", onclick: async () => {
+          const note = prompt("Admin note for the overrule:"); if (note === null) return;
+          const { error } = await sb.schema("executive").from("judgments").update({ status: "overridden", admin_note: note }).eq("id", j.id);
+          if (error) return alert(error.message);
+          render("judging");
+        } })
+      ]) : ""
+    ]), "No judgments yet. Judgments are produced by the judge agent (Phase 2) or recorded by the board."));
+
+  const rbox = card("Criteria change requests — board only", el("div", { class: "muted", text: "Loading…" }));
+  app.append(rbox);
+  const { data: reqs, error: re } = await sb.schema("executive").from("criteria_change_requests")
+    .select("id,criterion_name,current_definition,proposed_definition,purpose,status,created_at").order("created_at", { ascending: false }).limit(100);
+  rbox.textContent = ""; rbox.append(el("h2", { text: "Criteria change requests — board only" }));
+  if (re) fail(rbox, re);
+  else rbox.append(table(["criterion", "proposed change", "purpose", "status", ""],
+    (reqs || []).map(r => [
+      r.criterion_name, esc(r.proposed_definition || ""), esc(r.purpose || ""), r.status,
+      r.status === "pending_review" ? el("div", { class: "row" }, [
+        el("button", { text: "Approve", onclick: async () => {
+          const { error } = await sb.schema("executive").from("criteria_change_requests").update({ status: "approved", decided_at: new Date().toISOString() }).eq("id", r.id);
+          if (error) return alert(error.message);
+          render("judging");
+        } }),
+        el("button", { text: "Reject", onclick: async () => {
+          const note = prompt("Admin note (optional):"); if (note === null) return;
+          const { error } = await sb.schema("executive").from("criteria_change_requests").update({ status: "rejected", admin_note: note || null, decided_at: new Date().toISOString() }).eq("id", r.id);
+          if (error) return alert(error.message);
+          render("judging");
+        } })
+      ]) : ""
+    ]), "No change requests. The judge agent must file one here before any criterion definition changes."));
+}
+
+async function certified(app) {
+  const box = card("Certified register", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const [{ data, error }, { data: cats }] = await Promise.all([
+    sb.schema("executive").from("certified_records").select("id,category_name,award_title,recipient_name,recipient_type,seal_serial,status,issued_at").order("issued_at", { ascending: false, nullsFirst: false }).limit(100),
+    sb.schema("executive").from("award_categories").select("id,name").order("name")
+  ]);
+  box.textContent = ""; box.append(el("h2", { text: "Certified register" }));
+  if (error) fail(box, error);
+  else box.append(table(["recipient", "award", "category", "seal serial", "status", "issued"],
+    (data || []).map(r => [r.recipient_name, esc(r.award_title || ""), esc(r.category_name || ""), esc(r.seal_serial || ""), r.status, day(r.issued_at)]),
+    "No certified records issued yet."));
+  if (canManageRole()) {
+    box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Issue a certified record (the seal serial must be unique)" }));
+    box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "rName", placeholder: "Recipient name" }),
+      el("input", { id: "rAward", placeholder: "Award title" }),
+      el("select", { id: "rCat" }, [el("option", { value: "", text: "No category" }), ...(cats || []).map(c => el("option", { value: c.id, text: c.name }))]),
+      el("input", { id: "rSerial", placeholder: "Seal serial" }),
+      el("button", { class: "primary", text: "Issue", onclick: async () => {
+        const name = $("#rName").value.trim(); if (!name) return;
+        const cat = (cats || []).find(c => c.id === $("#rCat").value);
+        const { error } = await sb.schema("executive").from("certified_records").insert({
+          recipient_name: name, award_title: $("#rAward").value.trim() || null,
+          category_id: cat ? cat.id : null, category_name: cat ? cat.name : null,
+          seal_serial: $("#rSerial").value.trim() || null,
+          citation: $("#rCitation").value.trim() || null,
+          status: "issued", issued_at: new Date().toISOString()
+        });
+        if (error) return alert(error.message);
+        render("certified");
+      } })
+    ]));
+    box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+      el("input", { id: "rCitation", placeholder: "Citation", style: "min-width:420px" })
+    ]));
+  }
 }
 
 async function account(app) {
