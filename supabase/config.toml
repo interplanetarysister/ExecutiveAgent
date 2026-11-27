@@ -1,0 +1,16 @@
+# Supabase CLI configuration for the Executive Agent project.
+#
+# The canonical Supabase project ref is bimmfmydbmooarobilsq.
+#
+# Migrations live per supabase/MIGRATIONS.md: the canonical schema is
+# spread across two directories (executiveagent/supabase/migrations/ and
+# supabase/migrations/), so the Supabase CLI's default single-directory
+# layout does not match this repository's layout. The supported rebuild
+# path is supabase/rebuild.sh, which applies the manifest in
+# supabase/MIGRATIONS.md in order.
+
+project_id = "ExecutiveAgent"
+
+[api]
+enabled = true
+schemas = ["public", "executive"]
