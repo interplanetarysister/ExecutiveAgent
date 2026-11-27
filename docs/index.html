@@ -37,6 +37,19 @@
   nav button[aria-selected="true"]{border-color:var(--accent);color:var(--accent)}
   .hide{display:none!important}
   @media(max-width:620px){th:nth-child(n+3),td:nth-child(n+3){display:none}}
+  #printArea{display:none}
+  @media print{
+    header,nav,main,#gate{display:none!important}
+    body{background:#fff}
+    #printArea{display:block;color:#000;font:14px/1.55 Georgia,"Times New Roman",serif;padding:28px}
+    #printArea h1{font-size:24px;letter-spacing:0;color:#000;text-align:center}
+    #printArea h2{font-size:16px;color:#000;text-transform:none;letter-spacing:0}
+    #printArea table{font-size:13px}
+    #printArea th,#printArea td{border-bottom:1px solid #999;color:#000}
+    #printArea .seal{width:128px;height:128px;border:3px double #000;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;margin:8px auto 18px;padding:12px}
+    #printArea .cert-name{font-size:26px;font-weight:700;text-align:center}
+    #printArea .center{text-align:center}
+  }
 </style>
 </head>
 <body>
@@ -73,6 +86,7 @@
 
 <nav id="tabs" class="hide"></nav>
 <main id="app" class="hide"></main>
+<section id="printArea"></section>
 
 <script type="module">
 const CFG = {
@@ -103,6 +117,66 @@ const esc = (s) => String(s ?? "");
 
 let session = null, me = null, role = null;
 const workerUrl = "https://executive-agent-research.michelle-rogers-executive.workers.dev";
+
+// Agent chat state lives only in this page (never persisted); the Worker
+// caps the history it forwards by each agent's max_messages.
+const chatState = { agentId: null, messages: [] };
+
+// Print views (judge score sheet, seal certificate) render into
+// #printArea, which the print stylesheet shows instead of the app.
+function printDoc(node) {
+  const area = $("#printArea");
+  area.textContent = "";
+  area.append(node);
+  window.print();
+}
+
+async function printScoreSheet(judgmentId, subById, catById) {
+  const { data: j, error } = await sb.schema("executive").from("judgments").select("*").eq("id", judgmentId).maybeSingle();
+  if (error || !j) return alert("Could not load the judgment for printing.");
+  const sheet = el("div");
+  sheet.append(el("h1", { text: "Judge Score Sheet" }));
+  sheet.append(el("p", { text: "Nominee: " + (subById[j.submission_id]?.nominee_name || "") }));
+  sheet.append(el("p", { text: "Category: " + (catById[j.category_id]?.name || j.category_id || "") }));
+  sheet.append(el("p", { text: "Judged: " + day(j.judged_at || j.created_at) + " · Model: " + (j.model || "") + " · Status: " + j.status }));
+  if (j.understanding) sheet.append(el("h2", { text: "Understanding" }), el("p", { text: j.understanding }));
+  if (j.assessment) sheet.append(el("h2", { text: "Assessment" }), el("p", { text: j.assessment }));
+  const scores = Array.isArray(j.criteria_scores) ? j.criteria_scores : [];
+  if (scores.length) {
+    const t = el("table");
+    t.append(el("tr", {}, ["Criterion", "Score", "Rationale"].map(h => el("th", { text: h }))));
+    for (const s of scores) t.append(el("tr", {}, [
+      el("td", { text: s.criterion_name || s.criterion_id || "" }),
+      el("td", { text: (s.score ?? "") + (s.max_points != null ? " / " + s.max_points : "") }),
+      el("td", { text: s.rationale || "" })
+    ]));
+    sheet.append(el("h2", { text: "Criteria scores" }), t);
+  }
+  sheet.append(el("p", { text: "Total: " + (j.total_points ?? "") + " / " + (j.max_points ?? "") + " (" + (j.percentage ?? "") + "%)" }));
+  sheet.append(el("p", { text: "Recommendation: " + (j.recommendation || "") }));
+  if (j.admin_note) sheet.append(el("p", { text: "Admin note: " + j.admin_note }));
+  printDoc(sheet);
+}
+
+async function printCertificate(recordId) {
+  const { data: r, error } = await sb.schema("executive").from("certified_records").select("*").eq("id", recordId).maybeSingle();
+  if (error || !r) return alert("Could not load the certified record for printing.");
+  if (r.status !== "issued") return alert("Only issued records have a seal certificate.");
+  const cert = el("div");
+  cert.append(el("div", { class: "seal", text: "SIGIL · SEALED" }));
+  cert.append(el("h1", { text: "Certificate of Certification" }));
+  if (r.award_title) cert.append(el("p", { class: "center", text: r.award_title }));
+  cert.append(el("p", { class: "center", text: "Awarded to" }));
+  cert.append(el("div", { class: "cert-name", text: r.recipient_name }));
+  if (r.citation) cert.append(el("p", { class: "center", text: r.citation }));
+  const meta = [r.category_name, r.cycle, r.year].filter(Boolean).join(" · ");
+  if (meta) cert.append(el("p", { class: "center", text: meta }));
+  if (r.trust_statement) cert.append(el("p", { text: r.trust_statement }));
+  if (r.panel_summary) cert.append(el("p", { text: r.panel_summary }));
+  if (r.nominator_name) cert.append(el("p", { text: "Nominated by: " + r.nominator_name }));
+  cert.append(el("p", { class: "center", text: "Seal serial: " + (r.seal_serial || "") + " · Issued: " + day(r.issued_at || r.created_at) }));
+  printDoc(cert);
+}
 
 function msg(t) { $("#gateMsg").textContent = t || ""; }
 
@@ -307,8 +381,16 @@ async function research(app) {
   ]);
   vault.textContent = ""; vault.append(el("h2", { text: "Research vault — agent submissions" }));
   if (ee) fail(vault, ee);
-  else vault.append(table(["title", "topic", "agent", "status", "trust"],
-    (entries || []).map(r => [r.title, esc(r.topic || ""), esc(r.agent_name || ""), r.status, r.trust_score ?? ""]),
+  else vault.append(table(["title", "topic", "agent", "status", "trust", ""],
+    (entries || []).map(r => [r.title, esc(r.topic || ""), esc(r.agent_name || ""), r.status, r.trust_score ?? "",
+      canManageRole() ? el("button", { text: "Verify", onclick: async (ev) => {
+        ev.target.disabled = true;
+        const rr = await fetch(workerUrl + "/v1/verify", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ entry_id: r.id }) });
+        const jj = await rr.json().catch(() => ({}));
+        if (!rr.ok) { alert(jj.error || ("HTTP " + rr.status)); ev.target.disabled = false; return; }
+        alert("Verified: " + jj.verdict + " — trust " + jj.trust_score + " (" + jj.model + ")");
+        render("research");
+      } }) : ""]),
     "No research entries filed yet."));
   const canWrite = role && ["owner", "admin", "researcher"].includes(role);
   if (canWrite) {
@@ -387,7 +469,7 @@ async function agents(app) {
   const box = card("Agents — registry", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
   const { data, error } = await sb.schema("executive").from("agents")
-    .select("name,role,host,category,status,purpose,runtime,model,submission_count,last_submission_at,is_active")
+    .select("id,name,role,host,category,status,purpose,runtime,model,system_prompt,submission_count,last_submission_at,is_active")
     .order("sort_order").order("name").limit(100);
   box.textContent = ""; box.append(el("h2", { text: "Agents — registry" }));
   if (error) fail(box, error);
@@ -418,6 +500,52 @@ async function agents(app) {
         render("agents");
       } })
     ]));
+  }
+
+  const chatAgents = (data || []).filter(a => a.system_prompt);
+  if (chatAgents.length) {
+    const chatBox = card("Agent chat", el("div", { class: "muted", text: "Loading…" }));
+    app.append(chatBox);
+    if (!chatState.agentId || !chatAgents.some(a => a.id === chatState.agentId)) {
+      chatState.agentId = chatAgents[0].id;
+      chatState.messages = [];
+    }
+    chatBox.textContent = ""; chatBox.append(el("h2", { text: "Agent chat" }));
+    const log = el("div", { style: "margin-top:10px" });
+    const agentName = () => chatAgents.find(a => a.id === chatState.agentId)?.name || "Agent";
+    const drawLog = () => {
+      log.textContent = "";
+      if (!chatState.messages.length) { log.append(el("div", { class: "muted", text: "No messages yet. Say hello." })); return; }
+      for (const m of chatState.messages) {
+        log.append(el("div", { style: "margin:6px 0" }, [
+          el("span", { class: "tag", text: m.role === "user" ? "You" : agentName() }),
+          el("span", { text: " " + m.content })
+        ]));
+      }
+    };
+    chatBox.append(el("div", { class: "row" }, [
+      el("select", { id: "chatAgent", onchange: () => { chatState.agentId = $("#chatAgent").value; chatState.messages = []; drawLog(); } },
+        chatAgents.map(a => el("option", { value: a.id, text: a.name, ...(a.id === chatState.agentId ? { selected: "selected" } : {}) })))
+    ]));
+    chatBox.append(log);
+    drawLog();
+    chatBox.append(el("div", { class: "row", style: "margin-top:10px" }, [
+      el("input", { id: "chatInput", placeholder: "Message the agent", style: "min-width:320px" }),
+      el("button", { class: "primary", text: "Send", onclick: async (ev) => {
+        const text = $("#chatInput").value.trim(); if (!text) return;
+        chatState.messages.push({ role: "user", content: text });
+        $("#chatInput").value = "";
+        drawLog();
+        ev.target.disabled = true;
+        const rr = await fetch(workerUrl + "/v1/chat", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ agent_id: chatState.agentId, messages: chatState.messages }) });
+        const jj = await rr.json().catch(() => ({}));
+        ev.target.disabled = false;
+        if (!rr.ok) { log.append(el("div", { class: "err", text: jj.error || ("HTTP " + rr.status) })); return; }
+        chatState.messages.push({ role: "assistant", content: jj.reply });
+        drawLog();
+      } })
+    ]));
+    chatBox.append(el("div", { class: "muted", style: "margin-top:8px", text: "Chats run through the executive Worker to Workers AI with the agent's own system prompt, model, temperature, and token limits. History stays in this page only and is capped by the agent's max_messages." }));
   }
 }
 
@@ -561,6 +689,28 @@ async function judging(app) {
     ]));
   }
 
+  const runbox = card("Run the judge — board only", el("div", { class: "muted", text: "Loading…" }));
+  app.append(runbox);
+  const { data: allSubs } = await sb.schema("executive").from("submissions").select("id,nominee_name,status").limit(200);
+  runbox.textContent = ""; runbox.append(el("h2", { text: "Run the judge — board only" }));
+  const judgeable = (allSubs || []).filter(s => ["submitted", "screened"].includes(s.status));
+  if (!judgeable.length) runbox.append(el("div", { class: "muted", text: "No submissions awaiting judging." }));
+  else {
+    runbox.append(el("div", { class: "row" }, [
+      el("select", { id: "judgeSub" }, judgeable.map(s => el("option", { value: s.id, text: s.nominee_name + " (" + s.status + ")" }))),
+      el("button", { class: "primary", text: "Judge submission", onclick: async (ev) => {
+        ev.target.disabled = true;
+        const rr = await fetch(workerUrl + "/v1/judge", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ submission_id: $("#judgeSub").value }) });
+        const jj = await rr.json().catch(() => ({}));
+        if (!rr.ok) { alert(jj.error || ("HTTP " + rr.status)); ev.target.disabled = false; return; }
+        alert("Draft judgment recorded: " + jj.judgment.total_points + " / " + jj.judgment.max_points + " (" + jj.judgment.percentage + "%) — " + jj.judgment.recommendation +
+          (jj.criteria_change_requests ? " The judge also filed " + jj.criteria_change_requests + " criteria change request(s) for the board to decide." : ""));
+        render("judging");
+      } })
+    ]));
+    runbox.append(el("div", { class: "muted", style: "margin-top:8px", text: "The judge scores against the category's private criteria and writes a draft judgment for the board to approve or overrule. It can never change a criterion — it files a change request instead." }));
+  }
+
   const jbox = card("Judgments — board only", el("div", { class: "muted", text: "Loading…" }));
   app.append(jbox);
   const [{ data: judgments, error: je }, { data: subs }] = await Promise.all([
@@ -575,19 +725,22 @@ async function judging(app) {
       esc(subById[j.submission_id]?.nominee_name || ""), esc(catById[j.category_id]?.name || ""),
       esc(j.recommendation || ""), j.total_points != null ? (j.total_points + " / " + (j.max_points ?? "")) : "",
       j.percentage ?? "", j.status,
-      j.status === "draft" ? el("div", { class: "row" }, [
-        el("button", { text: "Approve", onclick: async () => {
-          const { error } = await sb.schema("executive").from("judgments").update({ status: "approved" }).eq("id", j.id);
-          if (error) return alert(error.message);
-          render("judging");
-        } }),
-        el("button", { text: "Overrule", onclick: async () => {
-          const note = prompt("Admin note for the overrule:"); if (note === null) return;
-          const { error } = await sb.schema("executive").from("judgments").update({ status: "overridden", admin_note: note }).eq("id", j.id);
-          if (error) return alert(error.message);
-          render("judging");
-        } })
-      ]) : ""
+      el("div", { class: "row" }, [
+        el("button", { text: "Print score sheet", onclick: () => printScoreSheet(j.id, subById, catById) }),
+        ...(j.status === "draft" ? [
+          el("button", { text: "Approve", onclick: async () => {
+            const { error } = await sb.schema("executive").from("judgments").update({ status: "approved" }).eq("id", j.id);
+            if (error) return alert(error.message);
+            render("judging");
+          } }),
+          el("button", { text: "Overrule", onclick: async () => {
+            const note = prompt("Admin note for the overrule:"); if (note === null) return;
+            const { error } = await sb.schema("executive").from("judgments").update({ status: "overridden", admin_note: note }).eq("id", j.id);
+            if (error) return alert(error.message);
+            render("judging");
+          } })
+        ] : [])
+      ])
     ]), "No judgments yet. Judgments are produced by the judge agent (Phase 2) or recorded by the board."));
 
   const rbox = card("Criteria change requests — board only", el("div", { class: "muted", text: "Loading…" }));
@@ -624,8 +777,9 @@ async function certified(app) {
   ]);
   box.textContent = ""; box.append(el("h2", { text: "Certified register" }));
   if (error) fail(box, error);
-  else box.append(table(["recipient", "award", "category", "seal serial", "status", "issued"],
-    (data || []).map(r => [r.recipient_name, esc(r.award_title || ""), esc(r.category_name || ""), esc(r.seal_serial || ""), r.status, day(r.issued_at)]),
+  else box.append(table(["recipient", "award", "category", "seal serial", "status", "issued", ""],
+    (data || []).map(r => [r.recipient_name, esc(r.award_title || ""), esc(r.category_name || ""), esc(r.seal_serial || ""), r.status, day(r.issued_at),
+      r.status === "issued" ? el("button", { text: "Print certificate", onclick: () => printCertificate(r.id) }) : ""]),
     "No certified records issued yet."));
   if (canManageRole()) {
     box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Issue a certified record (the seal serial must be unique)" }));
