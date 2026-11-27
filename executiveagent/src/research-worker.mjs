@@ -35,14 +35,25 @@ async function authenticate(request, env) {
     if (!user?.id || !user.email_confirmed_at || !allowed.includes(String(user.email || "").toLowerCase())) {
       return { error: json({error: "Not authorized for executive documents"}, 403) };
     }
+    // Require an active membership in the canonical Supabase access-control table.
+    const membershipUrl = new URL("/rest/v1/executive_memberships",base);
+    membershipUrl.searchParams.set("user_id","eq."+user.id);
+    membershipUrl.searchParams.set("select","role,active");
+    const membershipResponse = await fetch(membershipUrl,{
+      headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+match[1]},redirect:"error"
+    });
+    if (!membershipResponse.ok) return {error:json({error:"Membership verification unavailable"},503)};
+    const memberships = await membershipResponse.json();
+    if (!Array.isArray(memberships) || !memberships.some(m=>m.active && ["owner","admin"].includes(m.role))) {
+      return {error:json({error:"Executive membership required"},403)};
+    }
     return { id: user.id };
   } catch {
     return { error: json({error: "Authentication service unavailable"}, 503) };
   }
 }
 
-export default {
-  async fetch(request, env) {
+async function handle(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/health" && request.method === "GET") {
       return json({service:"executive-agent-research",status:env.RESEARCH_BUCKET?"ok":"storage-unavailable"});
@@ -85,5 +96,31 @@ export default {
     if (!object) return json({error:"Not found"},404);
     const headers = new Headers({"content-type":object.httpMetadata?.contentType || "application/octet-stream","cache-control":"private, no-store","x-content-type-options":"nosniff","content-disposition":"attachment"});
     return new Response(object.body,{headers});
+}
+
+// Only the executive console origin is permitted browser CORS access.
+const CONSOLE_ORIGIN = "https://interplanetarysister.github.io";
+function withCors(response, origin) {
+  if (origin !== CONSOLE_ORIGIN) return response;
+  const h = new Headers(response.headers);
+  h.set("access-control-allow-origin", CONSOLE_ORIGIN);
+  h.set("vary", "Origin");
+  h.set("access-control-expose-headers", "content-disposition");
+  return new Response(response.body, {status:response.status,statusText:response.statusText,headers:h});
+}
+export default {
+  async fetch(request, env) {
+    const origin = request.headers.get("origin");
+    if (request.method === "OPTIONS") {
+      if (origin !== CONSOLE_ORIGIN) return json({error:"Origin not allowed"},403);
+      return new Response(null,{status:204,headers:{
+        "access-control-allow-origin":CONSOLE_ORIGIN,
+        "access-control-allow-methods":"GET, PUT, DELETE, OPTIONS",
+        "access-control-allow-headers":"authorization, content-type",
+        "access-control-max-age":"600",
+        "vary":"Origin"
+      }});
+    }
+    return withCors(await handle(request,env),origin);
   }
 };
