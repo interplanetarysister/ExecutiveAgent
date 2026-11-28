@@ -1,6 +1,7 @@
 /**
  * Michelle Rogers Executive - private R2 document API plus the Phase 2
- * Veritas Nexus feature routes (agent submissions, verifier, judge, chat).
+ * Veritas Nexus feature routes (agent submissions, agent knowledge entry,
+ * verifier, judge, chat).
  * Supabase Auth validates confirmed owner email addresses for the document
  * API and the console-triggered routes. The agent submission route instead
  * authenticates registered agents by bearer key and writes through the
@@ -163,21 +164,29 @@ async function aiJson(env, opts) {
   try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
 }
 
-// --- Agent submission API (mirrors POST /api/agent/research) ---------------
+// --- Agent authentication (shared by the agent filing routes) -------------
 // A registered agent authenticates with its bearer key: the SHA-256 hash is
 // matched against executive.agents.api_key_hash. Only active agents may
 // file; paused/revoked agents are refused with 403.
-async function agentResearch(request, env) {
+async function authenticateAgent(request, env) {
   const header = request.headers.get("authorization") || "";
   const match = /^Bearer\s+([^\s]+)$/i.exec(header);
-  if (!match) return json({ error: "Authentication required" }, 401);
-  if (!env[SERVICE_KEY_ENV]) return json({ error: "Agent submissions have not been configured" }, 503);
+  if (!match) return { error: json({ error: "Authentication required" }, 401) };
+  if (!env[SERVICE_KEY_ENV]) return { error: json({ error: "Agent access has not been configured" }, 503) };
   const hash = await sha256Hex(match[1]);
   const found = await serviceRest(env, { table: "agents", query: "api_key_hash=" + eq(hash) + "&select=id,name,status,submission_count" });
-  if (!found.ok) return json({ error: "Agent lookup unavailable" }, 503);
+  if (!found.ok) return { error: json({ error: "Agent lookup unavailable" }, 503) };
   const agent = Array.isArray(found.data) ? found.data[0] : null;
-  if (!agent) return json({ error: "Invalid agent key" }, 401);
-  if (agent.status !== "active") return json({ error: "Agent is not active" }, 403);
+  if (!agent) return { error: json({ error: "Invalid agent key" }, 401) };
+  if (agent.status !== "active") return { error: json({ error: "Agent is not active" }, 403) };
+  return { agent };
+}
+
+// --- Agent submission API (mirrors POST /api/agent/research) ---------------
+async function agentResearch(request, env) {
+  const auth = await authenticateAgent(request, env);
+  if (auth.error) return auth.error;
+  const agent = auth.agent;
 
   const parsed = await readJson(request, MAX_AGENT_PAYLOAD_BYTES);
   if (parsed.error) return parsed.error;
@@ -231,6 +240,125 @@ async function agentResearch(request, env) {
   const count = (agent.submission_count ?? 0) + 1;
   await serviceRest(env, { table: "agents", method: "PATCH", query: "id=" + eq(agent.id), body: { submission_count: count, last_submission_at: new Date().toISOString() } });
   return json({ id: entry.id, status: "pending", agent: agent.name, submission_count: count }, 201);
+}
+
+// --- Agent knowledge entry (POST /v1/agent/knowledge) ---------------------
+// The autonomous filing path: a registered agent enters a researched
+// finding into the executive knowledge base herself, end-to-end, with no
+// human in the loop. The write mirrors the recording contract's shapes
+// (public.executive_record_finding / executive_record_artifact): the source
+// is deduplicated by URL in executive.sources, the finding lands in
+// executive.knowledge linked to that source, a public.executive_research
+// artifact row is written (deduplicated by source_url), and an audit row
+// records the filing.
+//
+// Verification honesty: a finding is recorded as verified ONLY when the
+// payload claims "source-checked" AND carries a source_url to check
+// against. Anything else is filed unverified — knowledge.verification
+// "reported", executive_research.verified false. The default is always
+// unverified.
+const KNOWLEDGE_VERIFICATIONS = new Set(["unverified", "source-checked"]);
+
+async function agentKnowledge(request, env) {
+  const auth = await authenticateAgent(request, env);
+  if (auth.error) return auth.error;
+  const agent = auth.agent;
+
+  const parsed = await readJson(request, MAX_AGENT_PAYLOAD_BYTES);
+  if (parsed.error) return parsed.error;
+  const p = parsed.value;
+  const bad = (msg) => json({ error: msg }, 400);
+  if (!p || typeof p !== "object" || Array.isArray(p)) return bad("Payload must be a JSON object");
+  if (!isStr(p.department, 100) || !p.department.trim()) return bad("department is required");
+  if (!isStr(p.topic, 200) || !p.topic.trim()) return bad("topic is required");
+  if (!isStr(p.title, 300) || !p.title.trim()) return bad("title is required");
+  if (!isStr(p.summary, 5000) || !p.summary.trim()) return bad("summary is required");
+  let sourceUrl = null;
+  if (p.source_url != null) {
+    if (!isStr(p.source_url, 2000)) return bad("source_url is too long");
+    let u; try { u = new URL(p.source_url); } catch { return bad("source_url is invalid"); }
+    if (!["http:", "https:"].includes(u.protocol)) return bad("source_url must be http(s)");
+    sourceUrl = p.source_url;
+  }
+  if (p.source_name != null && !isStr(p.source_name, 300)) return bad("source_name is too long");
+  const claimed = p.verification ?? "unverified";
+  if (!KNOWLEDGE_VERIFICATIONS.has(claimed)) return bad("verification must be unverified or source-checked");
+
+  // The honesty rule: no source to check against, no verified filing.
+  const verified = claimed === "source-checked" && sourceUrl !== null;
+  const knowledgeVerification = verified ? "verified" : "reported";
+  const now = new Date().toISOString();
+
+  // 1. The source, deduplicated by URL (the recording contract's rule).
+  let sourceId = null;
+  if (sourceUrl) {
+    const existing = await serviceRest(env, { table: "sources", query: "url=" + eq(sourceUrl) + "&select=id" });
+    if (!existing.ok) return json({ error: "Source lookup unavailable" }, 502);
+    const foundSource = Array.isArray(existing.data) ? existing.data[0] : null;
+    if (foundSource) {
+      sourceId = foundSource.id;
+    } else {
+      const srcRes = await serviceRest(env, { table: "sources", method: "POST", body: {
+        title: p.source_name?.trim() || p.title.trim(), url: sourceUrl,
+        publisher: p.source_name?.trim() || null, source_type: "web",
+      } });
+      if (!srcRes.ok || !Array.isArray(srcRes.data) || !srcRes.data[0]) return json({ error: "Could not store the source" }, 502);
+      sourceId = srcRes.data[0].id;
+    }
+  }
+
+  // 2. The knowledge entry itself, linked to its source.
+  const knowRes = await serviceRest(env, { table: "knowledge", method: "POST", body: {
+    department: p.department.trim(), topic: p.topic.trim(), title: p.title.trim(),
+    summary: p.summary.trim(), body: null, source_id: sourceId,
+    verification: knowledgeVerification, confidence: null, tags: [],
+  } });
+  if (!knowRes.ok || !Array.isArray(knowRes.data) || !knowRes.data[0]) return json({ error: "Could not file the knowledge entry" }, 502);
+  const knowledge = knowRes.data[0];
+
+  // 3. The research artifact row, deduplicated by source_url: re-filing a
+  // source refreshes the existing row instead of duplicating it.
+  const provenance = {
+    filed_by: agent.name, agent_id: agent.id, endpoint: "/v1/agent/knowledge",
+    department: p.department.trim(), topic: p.topic.trim(),
+    source_name: p.source_name?.trim() || null, claimed_verification: claimed,
+  };
+  let researchId = null;
+  let deduped = false;
+  if (sourceUrl) {
+    const existing = await serviceRest(env, { table: "executive_research", schema: "public", query: "source_url=" + eq(sourceUrl) + "&select=id" });
+    if (!existing.ok) return json({ error: "Research lookup unavailable" }, 502);
+    const foundResearch = Array.isArray(existing.data) ? existing.data[0] : null;
+    if (foundResearch) {
+      deduped = true;
+      researchId = foundResearch.id;
+      const upd = await serviceRest(env, { table: "executive_research", schema: "public", method: "PATCH", query: "id=" + eq(researchId), body: {
+        title: p.title.trim(), summary: p.summary.trim(), verified, provenance, retrieved_at: now, updated_at: now,
+      } });
+      if (!upd.ok) return json({ error: "Could not refresh the existing research record" }, 502);
+    }
+  }
+  if (!researchId) {
+    const resRes = await serviceRest(env, { table: "executive_research", schema: "public", method: "POST", body: {
+      title: p.title.trim(), kind: sourceUrl ? "source" : "reference",
+      source_url: sourceUrl, summary: p.summary.trim(), verified, provenance,
+      retrieved_at: sourceUrl ? now : null,
+    } });
+    if (!resRes.ok || !Array.isArray(resRes.data) || !resRes.data[0]) return json({ error: "Knowledge filed but its research record could not be stored" }, 502);
+    researchId = resRes.data[0].id;
+  }
+
+  // 4. Audit trail and agent counters — best effort, mirroring the
+  // recording contract's audit row and the submission route's counters.
+  await serviceRest(env, { table: "audit_log", method: "POST", body: {
+    actor: agent.name, action: "record_finding", target: p.title.trim(),
+    target_type: "knowledge", target_id: knowledge.id, result: "ok",
+    detail: { verification: knowledgeVerification, via: "/v1/agent/knowledge", research_id: researchId, deduped },
+  } });
+  const count = (agent.submission_count ?? 0) + 1;
+  await serviceRest(env, { table: "agents", method: "PATCH", query: "id=" + eq(agent.id), body: { submission_count: count, last_submission_at: now } });
+
+  return json({ knowledge_id: knowledge.id, research_id: researchId, deduped, verified, verification: knowledgeVerification, agent: agent.name, submission_count: count }, 201);
 }
 
 // --- Verifier (mirrors verifier.server.js) --------------------------------
@@ -454,6 +582,10 @@ async function handle(request, env) {
     if (url.pathname === "/v1/agent/research") {
       if (request.method !== "POST") return json({error:"Method not allowed"},405);
       return agentResearch(request, env);
+    }
+    if (url.pathname === "/v1/agent/knowledge") {
+      if (request.method !== "POST") return json({error:"Method not allowed"},405);
+      return agentKnowledge(request, env);
     }
     if (["/v1/verify", "/v1/judge", "/v1/chat"].includes(url.pathname)) {
       if (request.method !== "POST") return json({error:"Method not allowed"},405);
