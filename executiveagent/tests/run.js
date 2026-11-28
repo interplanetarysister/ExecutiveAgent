@@ -1,3 +1,6 @@
+// SUPERSEDED — do not use. This test targets public.agent_state from the
+// never-applied 20231123_init.sql migration. The real tests live in the
+// repository-root tests/ directory (npm test).
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '../.env' });
 

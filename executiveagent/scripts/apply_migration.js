@@ -1,3 +1,7 @@
+// SUPERSEDED — do not use. This script applies the never-applied
+// 20231123_init.sql migration and misuses the service-role key as a
+// database password. See supabase/MIGRATIONS.md and supabase/rebuild.sh
+// for the canonical migration order and the supported rebuild path.
 const fs = require('fs');
 const { Client } = require('pg');
 require('dotenv').config({ path: __dirname + '/../.env' });
