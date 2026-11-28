@@ -27,14 +27,14 @@ async function authenticate(request, env) {
     return { error: json({error: "Executive owner authentication has not been configured"}, 503) };
   }
   let base;
-  try { base = new URL(env.SUPABASE_URL); } catch { return { error: json({error: "Invalid authentication configuration"}, 503) }; }
+  try { base = new URL(String(env.SUPABASE_URL).trim()); } catch { return { error: json({error: "Invalid authentication configuration"}, 503) }; }
   if (base.protocol !== "https:" || !base.hostname.endsWith(".supabase.co") || base.pathname !== "/") {
     return { error: json({error: "Invalid authentication configuration"}, 503) };
   }
   try {
     const response = await fetch(new URL("/auth/v1/user", base), {
-      headers: { "apikey": env.SUPABASE_PUBLISHABLE_KEY, "authorization": "Bearer " + match[1] },
-      redirect: "error"
+      headers: { "apikey": String(env.SUPABASE_PUBLISHABLE_KEY).trim(), "authorization": "Bearer " + match[1] },
+      redirect: "manual"
     });
     if (!response.ok) return { error: json({error: "Invalid session"}, 401) };
     const user = await response.json();
@@ -47,7 +47,7 @@ async function authenticate(request, env) {
     membershipUrl.searchParams.set("user_id","eq."+user.id);
     membershipUrl.searchParams.set("select","role,active");
     const membershipResponse = await fetch(membershipUrl,{
-      headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+match[1]},redirect:"error"
+      headers:{apikey:String(env.SUPABASE_PUBLISHABLE_KEY).trim(),authorization:"Bearer "+match[1]},redirect:"manual"
     });
     if (!membershipResponse.ok) return {error:json({error:"Membership verification unavailable"},503)};
     const memberships = await membershipResponse.json();
@@ -55,7 +55,8 @@ async function authenticate(request, env) {
       return {error:json({error:"Executive membership required"},403)};
     }
     return { id: user.id, token: match[1] };
-  } catch {
+  } catch (error) {
+    console.error("Executive upstream auth error", error?.name || "unknown");
     return { error: json({error: "Authentication service unavailable"}, 503) };
   }
 }
@@ -85,7 +86,7 @@ const CHECK_STATUSES = new Set(["unchecked", "supports", "contradicts", "unclear
 function supabaseBase(env) {
   if (!env.SUPABASE_URL) return null;
   let base;
-  try { base = new URL(env.SUPABASE_URL); } catch { return null; }
+  try { base = new URL(String(env.SUPABASE_URL).trim()); } catch { return null; }
   if (base.protocol !== "https:" || !base.hostname.endsWith(".supabase.co") || base.pathname !== "/") return null;
   return base;
 }
@@ -95,9 +96,12 @@ function supabaseBase(env) {
 async function supabaseRest(env, { table, method = "GET", query = "", key, token, body, schema = "executive" }) {
   const base = supabaseBase(env);
   if (!base || !key) return { ok: false, status: 0, data: null };
-  const headers = { apikey: key, authorization: "Bearer " + (token || key) };
+  const cleanKey = String(key).trim();
+  const headers = { apikey: cleanKey, authorization: "Bearer " + (token || cleanKey) };
   if (schema !== "public") headers[method === "GET" ? "accept-profile" : "content-profile"] = schema;
-  const init = { method, headers, redirect: "error" };
+  // Workers supports only "follow" and "manual" redirect policies; "error"
+  // throws before any request is sent (see WORKER_AUTH_REPAIR_20261126.md).
+  const init = { method, headers, redirect: "manual" };
   if (body !== undefined) {
     headers["content-type"] = "application/json";
     headers.prefer = "return=representation";

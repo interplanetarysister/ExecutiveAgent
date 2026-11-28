@@ -59,7 +59,7 @@ which applies exactly this manifest.
   where they are first needed: the member write policies (step 5) close
   with an audit insert naming both columns, but the core migration
   creates `audit_log` without them and they were previously only added
-  by the reconcile migration (step 7). Idempotent — a no-op wherever the
+  by the reconcile migration (step 8). Idempotent — a no-op wherever the
   reconcile migration has already run, including the live project.
 - **Prerequisites:** Requires the core schema (step 1, for
   `executive.audit_log`).
@@ -76,7 +76,24 @@ which applies exactly this manifest.
   migration (step 2, for `public.executive_can()`).
 - **Header status:** Applied 2026-11-26.
 
-### 6. `supabase/migrations/20261126_enable_member_task_writes.sql`
+### 6. `supabase/migrations/20261126_grant_member_dml.sql`
+
+- **Purpose:** Grants `insert, update, delete` on the twelve executive
+  operations tables to `authenticated`. Added on the main line after the
+  Phase A acceptance found that only `SELECT` had been granted, so every
+  member write policy from step 5 was unreachable and writes failed with
+  a privilege error instead of passing through RLS. RLS remains the real
+  gate; this supplies the privilege half for all twelve tables at once.
+- **Prerequisites:** Requires the core schema (step 1, for the twelve
+  tables), the foundation migration (step 2), the member write policies
+  it makes reachable (step 5), and the audit-log target columns
+  (step 4): the migration closes with an audit insert naming
+  `target_type` / `target_id`. Placed immediately after step 5 for that
+  reason.
+- **Header status:** Applied 2026-11-26 (per its header, by the Base44
+  Superagent directly).
+
+### 7. `supabase/migrations/20261126_enable_member_task_writes.sql`
 
 - **Purpose:** Grants `insert, update` on `executive.tasks` to the
   `authenticated` role. PostgreSQL requires both table privileges and an
@@ -86,7 +103,7 @@ which applies exactly this manifest.
   `executive.tasks`) and the member write policies (step 5).
 - **Header status:** Applied 2026-11-26.
 
-### 7. `supabase/migrations/20261126_reconcile_canonical.sql`
+### 8. `supabase/migrations/20261126_reconcile_canonical.sql`
 
 - **Purpose:** Establishes one canonical home per domain: turns
   `public.executive_audit_events` into a **view** over
@@ -101,19 +118,79 @@ which applies exactly this manifest.
   the rebuild against the production project is **not** a no-op. See the
   safety note in `rebuild.sh`.
 
-### 8. `supabase/migrations/20261127_veritas_agents_registry.sql`
+### 9. `supabase/migrations/20261126_executive_appointments_correspondence.sql`
+
+- **Purpose:** Adds `executive.appointments` (meetings linked to people
+  and organizations, with status/outcome/follow-up) and an
+  `organization_id` link on `executive.communications`, with indexes and
+  member RLS policies (read for members, write for writers, delete for
+  manage). Backs the console's Appointments & correspondence tab.
+- **Prerequisites:** Requires the core schema (step 1, for
+  `communications`, `people`, `organizations`) and the foundation
+  migration (step 2, for `public.executive_can()`). Placed after the
+  reconcile migration (step 8) so it builds on the canonical schema.
+- **Header status:** Applied directly 2026-11-26 (per its header; the
+  project's migration endpoint was returning errors, so it was applied
+  with direct SQL).
+
+### 10. `supabase/migrations/20261126_executive_deadline_monitor.sql`
+
+- **Purpose:** Adds `executive.deadline_alerts` (persisted per-task
+  due/overdue alerts) and `executive.scheduler_credentials` (digest-only
+  scheduler tokens), the internal `executive.refresh_deadline_alerts()`
+  function, and the token-guarded public RPC
+  `public.executive_refresh_due_tasks(text)` that the Cloudflare
+  deadline-monitor Worker's cron trigger calls every 30 minutes.
+- **Prerequisites:** Requires the core schema (step 1, for
+  `executive.tasks`) and the foundation migration (step 2, for
+  `public.executive_can()`). The scheduler credential row itself is
+  provisioned out of band and is never in this repository.
+- **Header status:** Applied directly 2026-11-26 and verified separately
+  (per its header).
+
+### 11. `supabase/migrations/20261126_executive_scheduler_execution_receipts.sql`
+
+- **Purpose:** Adds `executive.scheduler_runs` (one receipt row per
+  scheduler execution, member-readable) and replaces
+  `public.executive_refresh_due_tasks(text)` so each run also records a
+  receipt. Backs the console overview's "last scheduled run" line.
+- **Prerequisites:** Requires the deadline monitor migration (step 10):
+  it redefines that step's RPC and reads the credentials table that step
+  creates. It must stay immediately after step 10 in the order.
+- **Header status:** Applied directly 2026-11-26 (per its header).
+
+### 12. `supabase/migrations/20261126_recording_contract.sql`
+
+- **Purpose:** The one supported write path for research findings:
+  `public.executive_record_finding()` validates verification state and
+  confidence, deduplicates sources by URL (backed by a new unique index
+  on `executive.sources(url)`), writes the knowledge entry and an audit
+  row in one transaction; `public.executive_record_artifact()` does the
+  same for research artifacts. The console's Knowledge tab records
+  findings through this contract.
+- **Prerequisites:** Requires the core schema (step 1, for `sources`,
+  `knowledge`, `audit_log`), the foundation migration (step 2, for
+  `public.executive_can()` and `public.executive_research`), the
+  audit-log target columns (step 4; its audit inserts name them), and
+  the reconcile migration (step 8): both functions read the actor's
+  email from the `executive.owner_directory` view that step 8 creates.
+  That view dependency is why this step sits after reconcile.
+- **Header status:** Applied 2026-11-26 (per its header, by the Base44
+  Superagent).
+
+### 13. `supabase/migrations/20261127_veritas_agents_registry.sql`
 
 - **Purpose:** Veritas agents registry (added after the 2026-11-26
   canonical set).
 - **Prerequisites:** Requires the canonical set above, in particular the
-  reconcile migration (step 7).
+  reconcile migration (step 8).
 
-### 9. `supabase/migrations/20261127_veritas_nexus_domain.sql`
+### 14. `supabase/migrations/20261127_veritas_nexus_domain.sql`
 
 - **Purpose:** Veritas Nexus domain schema (added after the 2026-11-26
   canonical set).
 - **Prerequisites:** Requires the canonical set above, in particular the
-  reconcile migration (step 7) and the Veritas agents registry (step 8).
+  reconcile migration (step 8) and the Veritas agents registry (step 13).
 
 ## DO NOT APPLY
 

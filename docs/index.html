@@ -5,38 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Michelle Rogers Executive</title>
 <style>
-  :root{--bg:#0b0e13;--panel:#141922;--line:#232b38;--text:#e6ecf5;--dim:#8b98ac;--accent:#5b9dff;--good:#3fbf7f;--warn:#e0a13a}
+  :root{--bg:#0b0e13;--panel:#141922;--panel2:#0f141c;--line:#232b38;--text:#e6ecf5;--dim:#8b98ac;--accent:#5b9dff;--good:#3fbf7f;--warn:#e0a13a;--bad:#ff8b8b}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-  header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
   h1{font-size:15px;margin:0;letter-spacing:.02em}
   h1 span{color:var(--dim);font-weight:400}
-  main{padding:20px;max-width:1080px;margin:0 auto;display:grid;gap:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  main{padding:18px;max-width:1120px;margin:0 auto;display:grid;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}
   .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:0 0 12px}
-  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-  .metric b{display:block;font-size:26px;font-weight:600;letter-spacing:-.01em}
+  .card h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:18px 0 10px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+  .metric b{display:block;font-size:24px;font-weight:600;letter-spacing:-.01em}
   .metric small{color:var(--dim)}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
   th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
-  input,select,textarea,button{font:inherit;color:var(--text);background:#0f141c;border:1px solid var(--line);border-radius:7px;padding:8px 10px}
-  input:focus,textarea:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+  input,select,textarea,button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+  input:focus,textarea:focus,select:focus{outline:1px solid var(--accent);border-color:var(--accent)}
   button{cursor:pointer;background:#1b2431}
   button.primary{background:var(--accent);color:#04101f;border-color:transparent;font-weight:600}
-  button.link{background:none;border:none;color:var(--dim);padding:4px 0;text-align:left}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--dim)}
+  button.mini{padding:3px 7px;font-size:12px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .muted{color:var(--dim);font-size:13px}
-  .err{color:#ff8b8b;font-size:13px;white-space:pre-wrap}
-  .tag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
-  .tag.ok{color:var(--good);border-color:#245}
-  #gate{max-width:420px;margin:9vh auto;padding:0 20px}
-  #gate .card{display:grid;gap:12px}
-  nav{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 4px;max-width:1080px;margin:0 auto}
+  .err{color:var(--bad);font-size:13px;white-space:pre-wrap}
+  .ok{color:var(--good);font-size:13px}
+  .tag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+  .tag.hot{color:var(--warn);border-color:#4a3a18}
+  .tag.done{color:var(--good);border-color:#204a34}
+  #gate{max-width:420px;margin:9vh auto;padding:0 18px}
+  #gate .card{display:grid;gap:10px}
+  nav{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px;max-width:1120px;margin:0 auto}
   nav button{font-size:13px;padding:6px 11px}
   nav button[aria-selected="true"]{border-color:var(--accent);color:var(--accent)}
   .hide{display:none!important}
-  @media(max-width:620px){th:nth-child(n+3),td:nth-child(n+3){display:none}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  @media(max-width:620px){th:nth-child(n+4),td:nth-child(n+4){display:none}}
   #printArea{display:none}
   @media print{
     header,nav,main,#gate{display:none!important}
@@ -56,10 +62,7 @@
 
 <header>
   <h1>Michelle Rogers <span>Executive</span></h1>
-  <div class="row">
-    <span id="whoami" class="muted"></span>
-    <button id="signout" class="hide">Sign out</button>
-  </div>
+  <div class="row"><span id="whoami" class="muted"></span><button id="signout" class="hide ghost">Sign out</button></div>
 </header>
 
 <section id="gate">
@@ -77,7 +80,7 @@
       <input id="pw" type="password" autocomplete="current-password" placeholder="Password">
       <div class="row" style="margin-top:10px">
         <button id="login" class="primary">Sign in</button>
-        <button id="magic">Email me a sign-in link</button>
+        <button id="magic" class="ghost">Email me a sign-in link</button>
       </div>
     </div>
     <div id="gateMsg" class="err"></div>
@@ -89,13 +92,12 @@
 <section id="printArea"></section>
 
 <script type="module">
-const CFG = {
-  supabaseUrl: "https://bimmfmydbmooarobilsq.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbW1mbXlkYm1vb2Fyb2JpbHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NjE5MjksImV4cCI6MjExMTEzNzkyOX0.U716FAEBnA8-TsZj8694zt1hjVB9Nm6khHJxnrsD-q4"
-};
+const CFG = { supabaseUrl: "https://bimmfmydbmooarobilsq.supabase.co", anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbW1mbXlkYm1vb2Fyb2JpbHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1NjE5MjksImV4cCI6MjExMTEzNzkyOX0.U716FAEBnA8-TsZj8694zt1hjVB9Nm6khHJxnrsD-q4" };
+const WORKER = "https://executive-agent-research.michelle-rogers-executive.workers.dev";
 const INITIAL_HASH = new URLSearchParams(location.hash.replace(/^#/, ""));
 const INITIAL_TYPE = INITIAL_HASH.get("type");
 const INITIAL_ERR = INITIAL_HASH.get("error_description");
+
 const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
 const sb = createClient(CFG.supabaseUrl, CFG.anonKey, { auth: { detectSessionInUrl: true, persistSession: true } });
 
@@ -103,20 +105,37 @@ const $ = (s) => document.querySelector(s);
 const el = (t, a = {}, kids = []) => {
   const n = document.createElement(t);
   for (const [k, v] of Object.entries(a)) {
+    if (v === undefined || v === null) continue;
     if (k === "class") n.className = v;
     else if (k === "text") n.textContent = v;
+    else if (k === "html") n.innerHTML = v;
     else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "value") n.value = v;
     else n.setAttribute(k, v);
   }
-  for (const c of [].concat(kids)) if (c) n.append(c);
+  for (const c of [].concat(kids)) if (c !== null && c !== undefined && c !== false) n.append(c);
   return n;
 };
-const money = (n) => n == null ? "not set" : "$" + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const money = (n) => n == null || n === "" ? "" : "$" + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
 const day = (d) => d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
-const esc = (s) => String(s ?? "");
+const s = (v) => v == null ? "" : String(v);
+const days = (d) => Math.ceil((new Date(d) - Date.now()) / 86400000);
 
-let session = null, me = null, role = null;
-const workerUrl = "https://executive-agent-research.michelle-rogers-executive.workers.dev";
+let session = null, me = null, role = null, currentTab = "overview";
+const canWrite = () => ["owner", "admin", "researcher"].includes(role);
+const canManage = () => ["owner", "admin"].includes(role);
+const exec = () => sb.schema("executive");
+
+// Worker calls for the Phase 2 routes (verify / judge / chat) use a freshly
+// read session token, like executiveDocumentRequest does for documents.
+async function workerFetch(path, init = {}) {
+  const { data } = await sb.auth.getSession();
+  const fresh = data?.session;
+  if (fresh) session = fresh;
+  const token = fresh?.access_token || session?.access_token;
+  if (!token) throw new Error("Executive session expired; please sign in again.");
+  return fetch(WORKER + path, { ...init, headers: { Authorization: "Bearer " + token, ...(init.headers || {}) } });
+}
 
 // Agent chat state lives only in this page (never persisted); the Worker
 // caps the history it forwards by each agent's max_messages.
@@ -132,7 +151,7 @@ function printDoc(node) {
 }
 
 async function printScoreSheet(judgmentId, subById, catById) {
-  const { data: j, error } = await sb.schema("executive").from("judgments").select("*").eq("id", judgmentId).maybeSingle();
+  const { data: j, error } = await exec().from("judgments").select("*").eq("id", judgmentId).maybeSingle();
   if (error || !j) return alert("Could not load the judgment for printing.");
   const sheet = el("div");
   sheet.append(el("h1", { text: "Judge Score Sheet" }));
@@ -159,7 +178,7 @@ async function printScoreSheet(judgmentId, subById, catById) {
 }
 
 async function printCertificate(recordId) {
-  const { data: r, error } = await sb.schema("executive").from("certified_records").select("*").eq("id", recordId).maybeSingle();
+  const { data: r, error } = await exec().from("certified_records").select("*").eq("id", recordId).maybeSingle();
   if (error || !r) return alert("Could not load the certified record for printing.");
   if (r.status !== "issued") return alert("Only issued records have a seal certificate.");
   const cert = el("div");
@@ -178,6 +197,10 @@ async function printCertificate(recordId) {
   printDoc(cert);
 }
 
+
+
+function note(node, text, cls = "muted") { node.className = cls; node.textContent = text; }
+
 function msg(t) { $("#gateMsg").textContent = t || ""; }
 
 async function loadIdentity() {
@@ -185,33 +208,26 @@ async function loadIdentity() {
   const { data } = await sb.from("executive_memberships").select("role,active").eq("user_id", me.id).maybeSingle();
   role = data?.active ? data.role : null;
   $("#whoami").textContent = (me.email || me.id) + (role ? " · " + role : " · no executive role");
-  return role;
 }
 
 async function boot() {
   if (INITIAL_ERR) msg("That link could not be used: " + INITIAL_ERR.replace(/\+/g, " "));
   const { data } = await sb.auth.getSession();
   session = data.session;
-  const type = INITIAL_TYPE;
-  if (session && (type === "invite" || type === "recovery")) {
+  if (session && (INITIAL_TYPE === "invite" || INITIAL_TYPE === "recovery")) {
     $("#setpw").classList.remove("hide");
     $("#signin").classList.add("hide");
     $("#gateNote").textContent = "Your email is confirmed. Set a password to finish.";
-    $("#gate").classList.remove("hide");
     history.replaceState(null, "", location.pathname + location.search);
     return;
   }
-  if (!session) return;
-  await enter();
+  if (session) await enter();
 }
 
 async function enter() {
+  // Every signed-in account can enter the dashboard shell.
+  // Database RLS and individual API permissions remain authoritative for data/actions.
   await loadIdentity();
-  if (!role) {
-    msg("Your account has no active executive membership. Contact the project owner.");
-    $("#signout").classList.remove("hide");
-    return;
-  }
   $("#gate").classList.add("hide");
   $("#signout").classList.remove("hide");
   $("#tabs").classList.remove("hide");
@@ -244,22 +260,20 @@ $("#savepw").onclick = async () => {
 };
 $("#signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
-const TABS = [
-  ["overview", "Overview"], ["funding", "Funding"], ["tasks", "Tasks"],
-  ["agents", "Agents"], ["knowledge", "Knowledge"], ["research", "Research"],
-  ["schedule", "Schedule"], ["awards", "Awards"], ["judging", "Judging"],
-  ["certified", "Certified"], ["documents", "Documents"], ["account", "Account"]
-];
+const TABS = [["overview", "Overview"], ["tasks", "Tasks"], ["funding", "Funding"],
+  ["relationships", "Relationships"], ["appointments", "Appointments & correspondence"], ["agents", "Agents"], ["knowledge", "Knowledge"],
+  ["research", "Research"], ["schedule", "Schedule"], ["awards", "Awards"], ["judging", "Judging"], ["certified", "Certified"], ["documents", "Documents"], ["account", "Account"]];
 function buildTabs() {
   const nav = $("#tabs"); nav.textContent = "";
-  for (const [id, label] of TABS) {
-    nav.append(el("button", { text: label, "aria-selected": String(id === "overview"), onclick: () => render(id) }));
-  }
+  for (const [id, label] of TABS) nav.append(el("button", { text: label, "aria-selected": String(id === "overview"), onclick: () => render(id) }));
 }
 function render(id) {
-  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === (TABS.find(t => t[0] === id) || [])[1])));
+  currentTab = id;
+  const label = (TABS.find(t => t[0] === id) || TABS[0])[1];
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.textContent === label)));
   const app = $("#app"); app.textContent = "";
-  ({ overview, funding, tasks, agents, knowledge, research, schedule, awards, judging, certified, documents, account }[id] || overview)(app);
+  const fn = { overview, tasks, funding, relationships, appointments, agents, knowledge, research, schedule, awards, judging, certified, documents, account }[id] || overview;
+  fn(app).catch(e => app.append(el("div", { class: "err", text: "Could not render: " + (e.message || e) })));
 }
 function card(title, kids) { return el("div", { class: "card" }, [el("h2", { text: title }), ...[].concat(kids)]); }
 function table(headers, rows, empty) {
@@ -270,97 +284,651 @@ function table(headers, rows, empty) {
   return t;
 }
 function fail(node, e) { node.append(el("div", { class: "err", text: "Could not load: " + (e.message || e) })); }
+function opts(list, value) { return list.map(([v, t]) => el("option", { value: v, text: t, selected: String(v) === String(value) ? "selected" : undefined })); }
+function sel(values, current, onchange) { return el("select", { onchange }, opts(values, current)); }
+
+async function patch(schema, tbl, id, body) {
+  const q = schema === "executive" ? exec().from(tbl) : sb.from(tbl);
+  const { error } = await q.update(body).eq("id", id);
+  if (error) { alert(error.message); return false; }
+  return true;
+}
+async function remove(schema, tbl, id) {
+  if (!confirm("Delete this record?")) return;
+  const q = schema === "executive" ? exec().from(tbl) : sb.from(tbl);
+  const { error } = await q.delete().eq("id", id);
+  if (error) return alert(error.message);
+  render(currentTab);
+}
+
+const TASK_STATUS = [["open", "open"], ["in_progress", "in progress"], ["blocked", "blocked"], ["done", "done"], ["cancelled", "cancelled"]];
+const OPPS_STATUS = [["researching", "researching"], ["qualified", "qualified"], ["preparing", "preparing"], ["submitted", "submitted"], ["follow_up", "follow up"], ["committed", "committed"], ["funded", "funded"], ["rejected", "rejected"], ["expired", "expired"]];
+const OPP_CATS = [["grant", "grant"], ["investment", "investment"], ["sponsorship", "sponsorship"], ["partnership", "partnership"], ["other", "other"]];
+const STAGES = [["identified", "identified"], ["researched", "researched"], ["contacted", "contacted"], ["engaged", "engaged"], ["meeting", "meeting"], ["committed", "committed"], ["dormant", "dormant"]];
 
 async function overview(app) {
   const c = card("Executive position", el("div", { class: "metrics" }, [
     el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "verified received" })]),
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "remaining to objective" })]),
     el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "open tasks" })]),
-    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "knowledge entries" })]),
-    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "open opportunities" })])
+    el("div", { class: "metric" }, [el("b", { text: "…" }), el("small", { text: "live opportunities" })])
   ]));
   app.append(c);
-  const [{ data: fr }, { data: tk, count: taskCount }, { data: kn, count: kCount }, { data: op, count: oCount }] =
-    await Promise.all([
-      sb.schema("executive").from("funding_received").select("*").maybeSingle(),
-      sb.schema("executive").from("tasks").select("id", { count: "exact" }).neq("status", "done"),
-      sb.schema("executive").from("knowledge").select("id", { count: "exact" }).limit(1),
-      sb.from("executive_opportunities").select("id", { count: "exact" }).not("status", "in", "(funded,rejected,expired)")
-    ]);
-  const vals = [money(fr?.verified_received_usd ?? 0), taskCount ?? 0, kCount ?? 0, oCount ?? 0];
+
+  const [rec, tk, op, dl, dec] = await Promise.all([
+    exec().from("funding_received").select("*").maybeSingle(),
+    exec().from("tasks").select("id,title,status,priority,due_at").neq("status", "done").order("priority").limit(8),
+    sb.from("executive_opportunities").select("id,title,status,deadline_at,amount_estimate").not("status", "in", "(funded,rejected,expired)").order("deadline_at", { ascending: true, nullsFirst: false }).limit(8),
+    exec().from("decisions").select("id,decision,decided_at,status").order("decided_at", { ascending: false }).limit(4),
+    exec().from("funding_pipeline").select("*")
+  ]);
+
+  const received = Number(rec.data?.verified_received_usd ?? 0);
+  const vals = [money(received), money(450000 - received), tk.data?.length ?? 0, op.data?.length ?? 0];
   c.querySelectorAll(".metric b").forEach((b, i) => b.textContent = vals[i]);
   app.append(el("div", { class: "muted", text: "Objective: $450,000 in verified, received capital. Only cleared funds are counted." }));
-}
 
-async function funding(app) {
-  const box = card("Funding", el("div", { class: "muted", text: "Loading…" }));
-  app.append(box);
-  const [{ data: rec }, { data: pipe, error: pe }, { data: opps, error: oe }] = await Promise.all([
-    sb.schema("executive").from("funding_received").select("*").maybeSingle(),
-    sb.schema("executive").from("funding_pipeline").select("*"),
-    sb.from("executive_opportunities").select("title,organization,category,status,amount_estimate,amount_verified,currency,deadline_at,source_url").order("deadline_at", { ascending: true, nullsFirst: false }).limit(50)
-  ]);
-  box.textContent = ""; box.append(el("h2", { text: "Funding" }));
-  box.append(el("div", { class: "metrics" }, [
-    el("div", { class: "metric" }, [el("b", { text: money(rec?.verified_received_usd ?? 0) }), el("small", { text: "verified received" })]),
-    el("div", { class: "metric" }, [el("b", { text: money(450000 - Number(rec?.verified_received_usd ?? 0)) }), el("small", { text: "remaining to objective" })])
-  ]));
-  if (pe) fail(box, pe);
-  if (pipe?.length) box.append(table(["stage", "commitments", "amount"], pipe.map(p => [p.stage, p.commitments, money(p.total_amount)])));
-  const h = el("h2", { text: "Opportunities" }); h.style.marginTop = "18px"; box.append(h);
-  if (oe) fail(box, oe);
-  else box.append(table(["opportunity", "funder", "type", "status", "amount", "deadline"],
-    (opps || []).map(o => [
-      o.source_url ? el("a", { href: o.source_url, target: "_blank", rel: "noopener", text: o.title, style: "color:var(--accent)" }) : o.title,
-      esc(o.organization), esc(o.category), esc(o.status),
-      o.amount_verified ? money(o.amount_verified) : (o.amount_estimate ? "~" + money(o.amount_estimate) : ""),
-      day(o.deadline_at)
-    ]), "No opportunities recorded yet."));
+  if (dl.error || tk.error || op.error) {
+    const e = dl.error || tk.error || op.error;
+    app.append(el("div", { class: "err", text: "Some records could not be read: " + e.message }));
+  }
 
-  const form = el("div", { class: "row", style: "margin-top:14px" }, [
-    el("input", { id: "oTitle", placeholder: "Opportunity title" }),
-    el("input", { id: "oOrg", placeholder: "Funder" }),
-    el("select", { id: "oCat" }, [["grant", "grant"], ["investment", "investment"], ["sponsorship", "sponsorship"], ["partnership", "partnership"], ["other", "other"]].map(([v, t]) => el("option", { value: v, text: t }))),
-    el("button", { class: "primary", text: "Add", onclick: async () => {
-      const title = $("#oTitle").value.trim(); if (!title) return;
-      const { error } = await sb.from("executive_opportunities").insert({ title, organization: $("#oOrg").value.trim() || null, category: $("#oCat").value, created_by: me.id });
-      if (error) return alert(error.message);
-      render("funding");
-    } })
-  ]);
-  box.append(el("div", { class: "muted", text: "Add an opportunity" }), form);
+  const grid = el("div", { class: "grid2" });
+  grid.append(card("Next tasks", table(["task", "status", "due"],
+    (tk.data || []).map(t => [t.title, el("span", { class: "tag", text: t.status }), day(t.due_at)]), "No open tasks.")));
+  grid.append(card("Nearest deadlines", table(["opportunity", "status", "deadline"],
+    (op.data || []).map(o => {
+      const d = o.deadline_at ? days(o.deadline_at) : null;
+      const tag = d === null ? "" : (d < 0 ? el("span", { class: "tag hot", text: "expired" }) : d <= 14 ? el("span", { class: "tag hot", text: d + " days" }) : el("span", { class: "tag", text: d + " days" }));
+      return [o.title, el("span", { class: "tag", text: o.status }), el("div", {}, [day(o.deadline_at), " ", tag])];
+    }), "No live opportunities.")));
+  app.append(grid);
+
+  // Server-side scheduler refreshes these persisted alerts every 30 minutes.
+  const alertBox = card("Scheduled task deadline watch", el("div", {class:"muted",text:"Loading deadline alerts…"}));
+  app.append(alertBox);
+  const alerts = await exec().from("deadline_alerts")
+    .select("task_id,severity,due_at").is("resolved_at",null)
+    .order("due_at",{ascending:true}).limit(20);
+  alertBox.textContent = "";
+  alertBox.append(el("h2",{text:"Scheduled task deadline watch"}));
+  if(alerts.error) {
+    fail(alertBox,alerts.error);
+  } else {
+    const ids = (alerts.data || []).map(a=>a.task_id);
+    let titles = new Map();
+    if(ids.length) {
+      const taskNames=await exec().from("tasks").select("id,title,status").in("id",ids);
+      if(taskNames.error) fail(alertBox,taskNames.error);
+      else titles=new Map((taskNames.data||[]).map(t=>[t.id,t.title]));
+    }
+    alertBox.append(table(["task","severity","due date"],(alerts.data||[]).map(a=>[
+      titles.get(a.task_id)||"Task "+a.task_id.slice(0,8),
+      el("span",{class:a.severity==="overdue"?"tag hot":"tag",text:a.severity}),
+      day(a.due_at)
+    ]),"No tasks due within 72 hours or overdue."));
+    const run = await exec().from("scheduler_runs")
+      .select("ran_at,refreshed").order("ran_at",{ascending:false}).limit(1).maybeSingle();
+    const lastRun = run.error ? "Run history unavailable: " + run.error.message
+      : run.data ? "Last scheduled run: " + new Date(run.data.ran_at).toLocaleString() +
+          " · " + run.data.refreshed + " task alerts reviewed"
+      : "Awaiting the first verified scheduled execution.";
+    alertBox.append(el("div",{class:"muted",text:lastRun}));
+  }
+  app.append(card("Recent decisions", table(["decision", "status", "when"],
+    (dec.data || []).map(d => [d.decision, d.status, day(d.decided_at)]), "No decisions recorded.")));
 }
 
 async function tasks(app) {
   const box = card("Tasks", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
-  const { data, error } = await sb.schema("executive").from("tasks").select("id,title,status,priority,owner_agent,due_at").order("priority").limit(100);
+  const { data, error } = await exec().from("tasks").select("id,title,detail,status,priority,owner_agent,due_at,blocked_on").order("priority").limit(200);
   box.textContent = ""; box.append(el("h2", { text: "Tasks" }));
-  if (error) fail(box, error);
-  else box.append(table(["task", "owner", "status", "priority", "due"],
-    (data || []).map(t => [t.title, esc(t.owner_agent || "unassigned"), t.status, t.priority, day(t.due_at)]), "No tasks yet."));
-  const canWrite = role && ["owner", "admin", "researcher"].includes(role);
-  if (canWrite) {
-    const form = el("div", { class: "row", style: "margin-top:14px" }, [
-      el("input", { id: "tTitle", placeholder: "New task" }),
-      el("input", { id: "tOwner", placeholder: "Owner agent" }),
+  if (error) return fail(box, error);
+  box.append(table(["task", "owner", "status", "priority", "due", ""], (data || []).map(t => [
+    el("div", {}, [el("div", { text: t.title }), t.blocked_on ? el("div", { class: "muted", text: "blocked: " + t.blocked_on }) : null]),
+    s(t.owner_agent) || "unassigned",
+    canWrite() ? sel(TASK_STATUS, t.status, async (e) => { if (await patch("executive", "tasks", t.id, { status: e.target.value })) render("tasks"); })
+               : el("span", { class: "tag", text: t.status }),
+    canWrite() ? sel([[1, "1"], [2, "2"], [3, "3"], [4, "4"], [5, "5"]], t.priority, async (e) => { if (await patch("executive", "tasks", t.id, { priority: Number(e.target.value) })) render("tasks"); })
+               : s(t.priority),
+    canWrite() ? el("input", { type: "date", value: t.due_at ? t.due_at.slice(0, 10) : "", onchange: async (e) => { await patch("executive", "tasks", t.id, { due_at: e.target.value ? e.target.value + "T12:00:00Z" : null }); } })
+               : day(t.due_at),
+    canManage() ? el("button", { class: "mini ghost", text: "delete", onclick: () => remove("executive", "tasks", t.id) }) : null
+  ]), "No tasks yet."));
+
+  if (!canWrite()) return box.append(el("div", { class: "muted", text: "Your role can read tasks but not change them." }));
+  const form = el("div", { class: "row", style: "margin-top:14px" }, [
+    el("input", { id: "tTitle", placeholder: "New task", style: "min-width:220px" }),
+    el("input", { id: "tOwner", placeholder: "Owner agent", style: "min-width:150px" }),
+    el("input", { id: "tDue", type: "date" }),
+    el("button", { class: "primary", text: "Add task", onclick: async () => {
+      const title = $("#tTitle").value.trim(); if (!title) return;
+      const { error } = await exec().from("tasks").insert({ title, owner_agent: $("#tOwner").value.trim() || null, due_at: $("#tDue").value ? $("#tDue").value + "T12:00:00Z" : null });
+      if (error) return alert(error.message);
+      render("tasks");
+    } })
+  ]);
+  box.append(el("div", { class: "muted", text: "Add a task" }), form);
+}
+
+async function funding(app) {
+  const box = card("Funding", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const [rec, pipe, opps, comms] = await Promise.all([
+    exec().from("funding_received").select("*").maybeSingle(),
+    exec().from("funding_pipeline").select("*"),
+    sb.from("executive_opportunities").select("id,title,organization,category,status,amount_estimate,amount_verified,currency,deadline_at,source_url,next_action,notes,last_checked_at").order("deadline_at", { ascending: true, nullsFirst: false }).limit(200),
+    canManage() ? exec().from("funding_commitments").select("id,counterparty,stage,amount,funds_cleared,cleared_at,evidence").order("created_at", { ascending: false }).limit(100) : Promise.resolve({ data: [] })
+  ]);
+  const received = Number(rec.data?.verified_received_usd ?? 0);
+  box.textContent = ""; box.append(el("h2", { text: "Funding" }));
+  box.append(el("div", { class: "metrics" }, [
+    el("div", { class: "metric" }, [el("b", { text: money(received) }), el("small", { text: "verified received" })]),
+    el("div", { class: "metric" }, [el("b", { text: money(450000 - received) }), el("small", { text: "remaining to objective" })]),
+    el("div", { class: "metric" }, [el("b", { text: String(opps.data?.length ?? 0) }), el("small", { text: "opportunities tracked" })])
+  ]));
+  if (pipe.data?.length) box.append(el("h3", { text: "Open commitments by stage" }));
+  if (pipe.data?.length) box.append(table(["stage", "commitments", "amount"], pipe.data.map(p => [p.stage, p.commitments, money(p.total_amount)])));
+  if (opps.error) fail(box, opps.error);
+
+  box.append(el("h3", { text: "Opportunities" }));
+  box.append(table(["opportunity", "funder", "type", "status", "amount", "deadline", ""], (opps.data || []).map(o => [
+    el("div", {}, [
+      o.source_url ? el("a", { href: o.source_url, target: "_blank", rel: "noopener", text: o.title, style: "color:var(--accent)" }) : el("div", { text: o.title }),
+      o.next_action ? el("div", { class: "muted", text: "next: " + o.next_action }) : null
+    ]),
+    s(o.organization),
+    s(o.category),
+    canWrite() ? sel(OPPS_STATUS, o.status, async (e) => { if (await patch("public", "executive_opportunities", o.id, { status: e.target.value, last_checked_at: new Date().toISOString() })) render("funding"); })
+               : el("span", { class: "tag", text: o.status }),
+    o.amount_verified ? money(o.amount_verified) : (o.amount_estimate ? "~" + money(o.amount_estimate) : ""),
+    canWrite() ? el("input", { type: "date", value: o.deadline_at ? o.deadline_at.slice(0, 10) : "", onchange: async (e) => { await patch("public", "executive_opportunities", o.id, { deadline_at: e.target.value ? e.target.value + "T23:59:00Z" : null }); } })
+               : day(o.deadline_at),
+    canManage() ? el("button", { class: "mini ghost", text: "delete", onclick: () => remove("public", "executive_opportunities", o.id) }) : null
+  ]), "No opportunities recorded yet."));
+
+  if (canWrite()) {
+    box.append(el("h3", { text: "Add an opportunity" }));
+    box.append(el("div", { class: "row" }, [
+      el("input", { id: "oTitle", placeholder: "Title", style: "min-width:200px" }),
+      el("input", { id: "oOrg", placeholder: "Funder" }),
+      el("select", { id: "oCat" }, opts(OPP_CATS, "grant")),
+      el("input", { id: "oAmt", placeholder: "Amount estimate", type: "number" }),
+      el("input", { id: "oDue", type: "date" }),
+      el("input", { id: "oUrl", placeholder: "Source URL", style: "min-width:200px" }),
       el("button", { class: "primary", text: "Add", onclick: async () => {
-        const title = $("#tTitle").value.trim(); if (!title) return;
-        const { error } = await sb.schema("executive").from("tasks").insert({ title, owner_agent: $("#tOwner").value.trim() || null });
+        const title = $("#oTitle").value.trim(); if (!title) return;
+        const { error } = await sb.from("executive_opportunities").insert({
+          title, organization: $("#oOrg").value.trim() || null, category: $("#oCat").value,
+          amount_estimate: $("#oAmt").value ? Number($("#oAmt").value) : null,
+          deadline_at: $("#oDue").value ? $("#oDue").value + "T23:59:00Z" : null,
+          source_url: $("#oUrl").value.trim() || null, created_by: me.id
+        });
         if (error) return alert(error.message);
-        render("tasks");
+        render("funding");
       } })
-    ]);
-    box.append(el("div", { class: "muted", text: "Add a task" }), form);
+    ]));
   }
+
+  if (canManage()) {
+    box.append(el("h3", { text: "Commitments (cleared funds count toward the objective)" }));
+    box.append(table(["counterparty", "stage", "amount", "cleared", ""], (comms.data || []).map(c => [
+      c.counterparty, c.stage, money(c.amount),
+      c.funds_cleared ? el("span", { class: "tag done", text: "cleared " + day(c.cleared_at) }) : el("span", { class: "tag", text: "not cleared" }),
+      c.funds_cleared ? null : el("button", { class: "mini primary", text: "mark cleared", onclick: async () => {
+        const d = prompt("Date funds cleared (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+        if (!d) return;
+        const ev = prompt("Evidence for this receipt (bank reference, statement, contract)");
+        if (!ev) return;
+        if (await patch("executive", "funding_commitments", c.id, { funds_cleared: true, cleared_at: d, stage: "funds_cleared", evidence: ev })) render("funding");
+      } })
+    ]), "No commitments recorded."));
+    box.append(el("div", { class: "row", style: "margin-top:12px" }, [
+      el("input", { id: "cParty", placeholder: "Counterparty", style: "min-width:180px" }),
+      el("input", { id: "cAmt", placeholder: "Amount", type: "number" }),
+      el("select", { id: "cStage" }, opts([["interest", "interest"], ["applied", "applied"], ["verbal", "verbal"], ["term_sheet", "term sheet"], ["signed", "signed"]], "interest")),
+      el("button", { class: "primary", text: "Record commitment", onclick: async () => {
+        const cp = $("#cParty").value.trim(); const amt = Number($("#cAmt").value);
+        if (!cp || !amt) return alert("Counterparty and amount are required.");
+        const { error } = await exec().from("funding_commitments").insert({ counterparty: cp, amount: amt, stage: $("#cStage").value });
+        if (error) return alert(error.message);
+        render("funding");
+      } })
+    ]));
+  }
+}
+
+async function relationships(app) {
+  const box = card("Relationships", el("div", { class: "muted", text: "Loading…" }));
+  app.append(box);
+  const [orgs, ppl, comms] = await Promise.all([
+    exec().from("organizations").select("id,name,org_type,website,focus").order("name").limit(200),
+    exec().from("people").select("id,full_name,title,email,organization_id,relationship_stage,last_contact_at,organizations(name)").order("full_name").limit(300),
+    exec().from("communications").select("id,channel,direction,subject,summary,occurred_at,people(full_name)").order("occurred_at", { ascending: false }).limit(40)
+  ]);
+  box.textContent = ""; box.append(el("h2", { text: "Relationships" }));
+  if (orgs.error) fail(box, orgs.error);
+  box.append(el("h3", { text: "Organizations" }));
+  box.append(table(["name", "type", "focus", ""], (orgs.data || []).map(o => [
+    o.website ? el("a", { href: o.website, target: "_blank", rel: "noopener", text: o.name, style: "color:var(--accent)" }) : o.name,
+    s(o.org_type), s(o.focus),
+    canManage() ? el("button", { class: "mini ghost", text: "delete", onclick: () => remove("executive", "organizations", o.id) }) : null
+  ]), "No organizations yet."));
+
+  box.append(el("h3", { text: "People" }));
+  box.append(table(["name", "title", "organization", "stage", "last contact"], (ppl.data || []).map(p => [
+    p.full_name, s(p.title), s(p.organizations?.name),
+    canWrite() ? sel(STAGES, p.relationship_stage, async (e) => { if (await patch("executive", "people", p.id, { relationship_stage: e.target.value })) render("relationships"); })
+               : el("span", { class: "tag", text: p.relationship_stage }),
+    day(p.last_contact_at)
+  ]), "No contacts yet."));
+
+  box.append(el("h3", { text: "Recent correspondence" }));
+  box.append(table(["who", "channel", "subject", "when"], (comms.data || []).map(c => [
+    s(c.people?.full_name) || "unlinked", c.direction + " / " + c.channel, s(c.subject), day(c.occurred_at)
+  ]), "No correspondence logged."));
+
+  if (!canWrite()) return;
+  box.append(el("h3", { text: "Add a record" }));
+  box.append(el("div", { class: "row" }, [
+    el("input", { id: "orgName", placeholder: "Organization name", style: "min-width:180px" }),
+    el("select", { id: "orgType" }, opts([["investor", "investor"], ["vc", "vc"], ["foundation", "foundation"], ["government", "government"], ["corporate", "corporate"], ["accelerator", "accelerator"], ["partner", "partner"]], "investor")),
+    el("button", { class: "ghost", text: "Add organization", onclick: async () => {
+      const name = $("#orgName").value.trim(); if (!name) return;
+      const { error } = await exec().from("organizations").insert({ name, org_type: $("#orgType").value });
+      if (error) return alert(error.message);
+      render("relationships");
+    } })
+  ]));
+  box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+    el("input", { id: "pName", placeholder: "Person name", style: "min-width:160px" }),
+    el("input", { id: "pTitle", placeholder: "Title" }),
+    el("input", { id: "pEmail", placeholder: "Email" }),
+    el("select", { id: "pOrg" }, [el("option", { value: "", text: "no organization" })].concat((orgs.data || []).map(o => el("option", { value: o.id, text: o.name })))),
+    el("button", { class: "ghost", text: "Add person", onclick: async () => {
+      const name = $("#pName").value.trim(); if (!name) return;
+      const { error } = await exec().from("people").insert({ full_name: name, title: $("#pTitle").value.trim() || null, email: $("#pEmail").value.trim() || null, organization_id: $("#pOrg").value || null });
+      if (error) return alert(error.message);
+      render("relationships");
+    } })
+  ]));
+}
+
+
+const APPOINTMENT_STATES = [["scheduled","scheduled"],["completed","completed"],["rescheduled","rescheduled"],["cancelled","cancelled"]];
+const CORRESPONDENCE_CHANNELS = [["email","email"],["phone","phone"],["meeting","meeting"],["video","video"],["message","message"],["letter","letter"],["other","other"]];
+const CORRESPONDENCE_DIRECTIONS = [["outbound","outbound"],["inbound","inbound"],["internal","internal"]];
+function textSearch(v) { return String(v || "").toLocaleLowerCase().trim(); }
+function safeDatetime(s) {
+  if (!s) return null;
+  const date = new Date(s);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+function relationshipOptions(rows, label) {
+  return [el("option",{value:"",text:label})].concat(rows.map(item=>
+    el("option",{value:item.id,text:item.name || item.full_name})));
+}
+function fmtDateTime(value) { return value ? new Date(value).toLocaleString() : "—"; }
+
+async function appointments(app) {
+  app.append(card("Appointments and correspondence",
+    el("div",{class:"muted",text:"Search meetings, correspondence, and follow-ups by person or company. Records are stored in the executive database."})));
+  const loading = card("Timeline",el("div",{class:"muted",text:"Loading appointments and interactions…"}));
+  app.append(loading);
+  const [orgRes, peopleRes, appointmentRes, commRes] = await Promise.all([
+    exec().from("organizations").select("id,name").order("name").limit(1000),
+    exec().from("people").select("id,full_name,organization_id").order("full_name").limit(1000),
+    exec().from("appointments").select("id,title,person_id,organization_id,starts_at,ends_at,location,meeting_link,agenda,notes,status,outcome,follow_up_at").order("starts_at",{ascending:false}).limit(1000),
+    exec().from("communications").select("id,person_id,organization_id,channel,direction,subject,summary,occurred_at").order("occurred_at",{ascending:false}).limit(1000)
+  ]);
+  loading.remove();
+  const error = [orgRes,peopleRes,appointmentRes,commRes].find(r=>r.error)?.error;
+  if (error) return app.append(card("Records unavailable",el("div",{class:"err",text:error.message})));
+  const orgs=orgRes.data || [], ppl=peopleRes.data || [];
+  const appts=appointmentRes.data || [], communications=commRes.data || [];
+  const orgById = new Map(orgs.map(o=>[o.id,o]));
+  const personById = new Map(ppl.map(p=>[p.id,p]));
+  const orgIdFor = r => r.organization_id || personById.get(r.person_id)?.organization_id || null;
+  const personName = r => personById.get(r.person_id)?.full_name || "—";
+  const companyName = r => orgById.get(orgIdFor(r))?.name || "—";
+  const selectPerson = id => el("select",{id},relationshipOptions(ppl,"Select person (optional)"));
+  const selectOrg = id => el("select",{id},relationshipOptions(orgs,"Select company (optional)"));
+
+  const search = el("input",{placeholder:"Search individual, company, subject or notes", "aria-label":"Search appointments and correspondence",style:"flex:1;min-width:220px"});
+  const companyFilter=selectOrg("timelineCompany");
+  const personFilter=selectPerson("timelinePerson");
+  const kindFilter=el("select",{"aria-label":"Record type"},[
+    el("option",{value:"all",text:"All records"}),
+    el("option",{value:"appointment",text:"Appointments"}),
+    el("option",{value:"correspondence",text:"Correspondence"})
+  ]);
+  const timelineBody=el("div",{});
+  const panel=card("Search records",[
+    el("div",{class:"row"},[search,personFilter,companyFilter,kindFilter]),
+    el("div",{class:"muted",text:"Filters work together. Company filtering also includes correspondence linked to employees at that company."}),
+    timelineBody
+  ]);
+  app.append(panel);
+  function matches(r,type) {
+    if(kindFilter.value!=="all" && kindFilter.value!==type)return false;
+    if(personFilter.value && r.person_id!==personFilter.value)return false;
+    if(companyFilter.value && orgIdFor(r)!==companyFilter.value)return false;
+    const term=textSearch(search.value);
+    if(!term)return true;
+    return [personName(r),companyName(r),r.title,r.subject,r.summary,r.notes,r.agenda,r.outcome,r.location]
+      .some(v=>textSearch(v).includes(term));
+  }
+  function drawTimeline() {
+    timelineBody.textContent="";
+    const rows = [
+      ...appts.filter(a=>matches(a,"appointment")).map(a=>({type:"appointment",date:a.starts_at,record:a})),
+      ...communications.filter(c=>matches(c,"correspondence")).map(c=>({type:"correspondence",date:c.occurred_at,record:c}))
+    ].sort((a,b)=>(new Date(b.date||0))-(new Date(a.date||0)));
+    timelineBody.append(el("div",{class:"muted",style:"margin-top:12px",
+      text:rows.length+" matching records (up to 1,000 recent records of each type loaded)."}));
+    if(!rows.length)return timelineBody.append(el("div",{class:"muted",text:"No records match these filters."}));
+    const records=rows.slice(0,300).map(({type,record:r,date})=>{
+      const description=type==="appointment" ? (r.agenda||r.notes||r.outcome||"") : (r.summary||"");
+      const line=el("div",{class:"card",style:"margin-top:9px"},[
+        el("div",{class:"row"},[
+          el("span",{class:"tag",text:type}),
+          el("strong",{text:r.title||r.subject||"(Untitled record)"}),
+          el("span",{class:"muted",text:fmtDateTime(date)})
+        ]),
+        el("div",{class:"muted",text:"Person: "+personName(r)+" · Company: "+companyName(r)}),
+        el("div",{class:"muted",text:type==="appointment"
+          ? "Status: "+r.status+(r.location?" · "+r.location:"")+(r.follow_up_at?" · Follow up "+fmtDateTime(r.follow_up_at):"")
+          : r.direction+" / "+r.channel}),
+        ...(description?[el("div",{style:"white-space:pre-wrap",text:description})]:[])
+      ]);
+      if(type==="appointment" && canWrite()) {
+        const state=sel(APPOINTMENT_STATES,r.status,async ev=>{
+          if(await patch("executive","appointments",r.id,{status:ev.target.value})) render("appointments");
+        });
+        line.append(el("div",{class:"row",style:"margin-top:9px"},[
+          el("span",{class:"muted",text:"Update status:"}),state,
+          el("button",{class:"mini",text:"Edit notes / outcome",onclick:async()=>{
+            const notes=prompt("Appointment notes",r.notes||"");if(notes===null)return;
+            const outcome=prompt("Appointment outcome",r.outcome||"");if(outcome===null)return;
+            if(await patch("executive","appointments",r.id,{notes,outcome}))render("appointments");
+          }})
+        ]));
+      }
+      if(canManage())line.append(el("button",{class:"mini ghost",style:"margin-top:8px",text:"Delete",onclick:()=>remove("executive",type==="appointment"?"appointments":"communications",r.id)}));
+      return line;
+    });
+    timelineBody.append(...records);
+    if(rows.length>300)timelineBody.append(el("div",{class:"muted",text:"Showing 300 results. Refine your filters to narrow the list."}));
+  }
+  [search,personFilter,companyFilter,kindFilter].forEach(x=>x.addEventListener(x===search?"input":"change",drawTimeline));
+  drawTimeline();
+
+  if(!canWrite()) {
+    app.append(card("Record access",el("div",{class:"muted",text:"Viewing is available to authorized readers. Recording appointments and correspondence requires write access."})));
+    return;
+  }
+  const appointmentPerson=selectPerson("apptPerson");
+  const appointmentOrg=selectOrg("apptOrg");
+  const appointmentTitle=el("input",{placeholder:"Appointment title",style:"min-width:200px"});
+  const appointmentStart=el("input",{type:"datetime-local","aria-label":"Appointment start"});
+  const appointmentEnd=el("input",{type:"datetime-local","aria-label":"Appointment end"});
+  const appointmentLocation=el("input",{placeholder:"Location or meeting link",style:"min-width:200px"});
+  const appointmentAgenda=el("textarea",{placeholder:"Agenda and preparation notes",rows:3,style:"width:100%"});
+  const appointmentFollowup=el("input",{type:"datetime-local","aria-label":"Follow-up date and time"});
+  const appointmentStatus=el("select",{},opts(APPOINTMENT_STATES,"scheduled"));
+  const appointmentFeedback=el("div",{class:"err","aria-live":"polite"});
+  app.append(card("Record an appointment",[
+    el("div",{class:"row"},[appointmentTitle,appointmentPerson,appointmentOrg]),
+    el("div",{class:"row",style:"margin-top:9px"},[
+      el("label",{},["Starts ",appointmentStart]),el("label",{},["Ends ",appointmentEnd]),
+      el("label",{},["Follow-up ",appointmentFollowup]),appointmentStatus
+    ]),
+    el("div",{class:"row",style:"margin-top:9px"},[appointmentLocation]),
+    appointmentAgenda,
+    el("button",{class:"primary",text:"Save appointment",onclick:async()=>{
+      const title=appointmentTitle.value.trim();
+      const starts=safeDatetime(appointmentStart.value),ends=safeDatetime(appointmentEnd.value);
+      if(!title || !starts) return note(appointmentFeedback,"Title and appointment start are required.","err");
+      if(ends && ends<=starts)return note(appointmentFeedback,"End must be later than start.","err");
+      if(!appointmentPerson.value && !appointmentOrg.value)
+        return note(appointmentFeedback,"Select an individual or company.","err");
+      const inferredOrg=personById.get(appointmentPerson.value)?.organization_id;
+      const {error}=await exec().from("appointments").insert({
+        title,starts_at:starts,ends_at:ends,
+        person_id:appointmentPerson.value||null,
+        organization_id:appointmentOrg.value||inferredOrg||null,
+        location:appointmentLocation.value.trim()||null,
+        agenda:appointmentAgenda.value.trim()||null,
+        follow_up_at:safeDatetime(appointmentFollowup.value),
+        status:appointmentStatus.value
+      });
+      if(error)return note(appointmentFeedback,error.message,"err");
+      render("appointments");
+    }}),appointmentFeedback
+  ]));
+
+  const correspondencePerson=selectPerson("corrPerson");
+  const correspondenceOrg=selectOrg("corrOrg");
+  const correspondenceSubject=el("input",{placeholder:"Subject",style:"min-width:220px"});
+  const correspondenceChannel=el("select",{},opts(CORRESPONDENCE_CHANNELS,"email"));
+  const correspondenceDirection=el("select",{},opts(CORRESPONDENCE_DIRECTIONS,"outbound"));
+  const correspondenceDate=el("input",{type:"datetime-local","aria-label":"Correspondence date"});
+  const correspondenceBody=el("textarea",{placeholder:"Summary, transcript, or interaction notes",rows:4,style:"width:100%"});
+  const correspondenceFeedback=el("div",{class:"err","aria-live":"polite"});
+  app.append(card("Record correspondence",[
+    el("div",{class:"row"},[correspondenceSubject,correspondencePerson,correspondenceOrg]),
+    el("div",{class:"row",style:"margin-top:9px"},[correspondenceChannel,correspondenceDirection,
+      el("label",{},["Occurred ",correspondenceDate])]),
+    correspondenceBody,
+    el("button",{class:"primary",text:"Save correspondence",onclick:async()=>{
+      if(!correspondencePerson.value && !correspondenceOrg.value)
+        return note(correspondenceFeedback,"Select an individual or company.","err");
+      const subject=correspondenceSubject.value.trim();
+      const summary=correspondenceBody.value.trim();
+      if(!subject && !summary)return note(correspondenceFeedback,"Enter a subject or summary.","err");
+      const inferredOrg=personById.get(correspondencePerson.value)?.organization_id;
+      const {error}=await exec().from("communications").insert({
+        person_id:correspondencePerson.value||null,
+        organization_id:correspondenceOrg.value||inferredOrg||null,
+        channel:correspondenceChannel.value,
+        direction:correspondenceDirection.value,
+        subject:subject||null,summary:summary||null,
+        occurred_at:safeDatetime(correspondenceDate.value)||new Date().toISOString()
+      });
+      if(error)return note(correspondenceFeedback,error.message,"err");
+      render("appointments");
+    }}),correspondenceFeedback
+  ]));
 }
 
 async function knowledge(app) {
   const box = card("Knowledge", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
-  const { data, error } = await sb.schema("executive").from("knowledge").select("department,topic,title,verification,created_at").order("created_at", { ascending: false }).limit(100);
+  const [kn, src, res] = await Promise.all([
+    exec().from("knowledge").select("id,department,topic,title,summary,verification,created_at").order("created_at", { ascending: false }).limit(100),
+    exec().from("sources").select("id,title,url,publisher,source_type,reliability,accessed_at").order("accessed_at", { ascending: false }).limit(50),
+    sb.from("executive_research").select("id,title,kind,source_url,verified,created_at").order("created_at", { ascending: false }).limit(50)
+  ]);
   box.textContent = ""; box.append(el("h2", { text: "Knowledge" }));
-  if (error) fail(box, error);
-  else box.append(table(["title", "department", "topic", "evidence"], (data || []).map(k => [k.title, k.department, k.topic, k.verification]), "No knowledge recorded yet."));
+  if (kn.error) fail(box, kn.error);
+  box.append(table(["title", "department", "topic", "evidence"], (kn.data || []).map(k => [
+    el("div", {}, [el("div", { text: k.title }), k.summary ? el("div", { class: "muted", text: k.summary }) : null]),
+    k.department, k.topic, el("span", { class: "tag" + (k.verification === "verified" ? " done" : ""), text: k.verification })
+  ]), "No knowledge recorded yet."));
+
+  box.append(el("h3", { text: "Sources" }));
+  box.append(table(["source", "publisher", "type", "reliability"], (src.data || []).map(x => [
+    x.url ? el("a", { href: x.url, target: "_blank", rel: "noopener", text: x.title, style: "color:var(--accent)" }) : x.title,
+    s(x.publisher), s(x.source_type), s(x.reliability)
+  ]), "No sources recorded."));
+
+  box.append(el("h3", { text: "Research artifacts" }));
+  box.append(table(["title", "kind", "verified", "source"], (res.data || []).map(r => [
+    r.title, r.kind, el("span", { class: "tag" + (r.verified ? " done" : ""), text: r.verified ? "verified" : "unverified" }),
+    r.source_url ? el("a", { href: r.source_url, target: "_blank", rel: "noopener", text: "link", style: "color:var(--accent)" }) : ""
+  ]), "No research artifacts."));
+
+  if (!canWrite()) return;
+  box.append(el("h3", { text: "Record a finding" }));
+  box.append(el("div", { class: "muted", text: "Goes through the recording contract: source deduplicated by URL, knowledge entry written with its verification state, audit row recorded." }));
+  box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+    el("input", { id: "kTitle", placeholder: "Title", style: "min-width:200px" }),
+    el("select", { id: "kDept" }, opts([["leadership", "leadership"], ["finance", "finance"], ["law", "law"], ["psychology", "psychology"], ["marketing", "marketing"], ["communications", "communications"], ["technology", "technology"], ["ifund", "ifund"]], "leadership")),
+    el("input", { id: "kTopic", placeholder: "Topic" }),
+    el("select", { id: "kVer" }, opts([["reported", "reported"], ["verified", "verified"], ["projected", "projected"], ["planned", "planned"]], "reported")),
+    el("input", { id: "kConf", placeholder: "Confidence 0-100", type: "number", min: "0", max: "100", style: "width:150px" })
+  ]));
+  box.append(el("div", { class: "row", style: "margin-top:8px" }, [
+    el("input", { id: "kSummary", placeholder: "One line summary", style: "min-width:260px" }),
+    el("input", { id: "kSrcUrl", placeholder: "Source URL", style: "min-width:240px" }),
+    el("input", { id: "kSrcPub", placeholder: "Publisher" }),
+    el("button", { class: "primary", text: "Record finding", onclick: async () => {
+      const title = $("#kTitle").value.trim(); const summary = $("#kSummary").value.trim();
+      if (!title || !summary) return alert("Title and summary are required.");
+      const { error } = await sb.rpc("executive_record_finding", {
+        p_title: title, p_summary: summary, p_body: summary,
+        p_department: $("#kDept").value, p_topic: $("#kTopic").value.trim() || "general",
+        p_verification: $("#kVer").value,
+        p_confidence: Number($("#kConf").value || 60),
+        p_tags: [],
+        p_source_url: $("#kSrcUrl").value.trim() || null,
+        p_source_title: $("#kSrcPub").value.trim() || null,
+        p_source_publisher: $("#kSrcPub").value.trim() || null
+      });
+      if (error) return alert(error.message);
+      render("knowledge");
+    } })
+  ]));
+}
+
+async function executiveDocumentRequest(path, init = {}) {
+  const {data,error} = await sb.auth.getSession();
+  const fresh = data?.session;
+  if (error || !fresh?.access_token) throw new Error("Executive session expired; please sign in again.");
+  if (!role || !["owner", "admin"].includes(role)) throw new Error("An active executive document role is required.");
+  session = fresh;
+  return fetch(WORKER + path, {
+    ...init,
+    headers: {Authorization: "Bearer " + fresh.access_token, ...(init.headers || {})}
+  });
+}
+
+async function documents(app) {
+  const status = el("div", { class: "muted", text: "" });
+  const box = card("Private documents (Cloudflare R2)", [
+    el("div", { class: "muted", text: "Stored in the researched-knowledge bucket through the executive-agent-research Worker. Each member sees only their own documents." }),
+    el("div", { class: "row", style: "margin-top:10px" }, [
+      el("button", { class: "ghost", text: "Run access test", onclick: (e) => testDocuments(status, e.target) }),
+      el("button", { class: "ghost", text: "Refresh list", onclick: () => render("documents") })
+    ]),
+    status,
+    el("div", { id: "docBody", class: "muted", style: "margin-top:12px", text: "Loading…" })
+  ]);
+  app.append(box);
+
+  const body = $("#docBody");
+  const call = executiveDocumentRequest;
+  let r, j;
+  try { r = await call("/v1/documents"); j = await r.json(); }
+  catch (e) { body.className = "err"; body.textContent = "Worker unreachable from this page: " + e.message; return; }
+  if (!r.ok) {
+    body.className = "err";
+    body.textContent = "Document service returned " + r.status + ": " + (j.error || "unknown") +
+      (r.status === 503 ? "\n\nThe Worker cannot verify sessions right now. Use Run access test and send the output to your administrator." : "");
+    return;
+  }
+  body.className = "";
+  if (!j.objects?.length) { body.className = "muted"; body.textContent = "No documents stored."; }
+  else body.append(table(["name", "size", ""], j.objects.map(o => [o.name, o.size, [el("button", { class: "mini", text: "download", onclick: async () => {
+    const rr = await call("/v1/documents/" + encodeURIComponent(o.name));
+    if (!rr.ok) return alert("Could not download: " + rr.status);
+    const b = await rr.blob(); const a = el("a", { href: URL.createObjectURL(b), download: o.name.split("/").pop() }); a.click();
+  } }), el("button", { class: "mini ghost", text: "delete", onclick: async () => {
+    if (!confirm("Permanently delete " + o.name + "?")) return;
+    const rr = await call("/v1/documents/" + encodeURIComponent(o.name), { method: "DELETE" });
+    if (!rr.ok) return alert("Could not delete document: " + rr.status);
+    render("documents");
+  } })]])));
+  const file = el("input", { type: "file", accept: ".pdf,.txt,.md,.json" });
+  body.append(el("div", { class: "row", style: "margin-top:12px" }, [file, el("button", { class: "primary", text: "Upload", onclick: async () => {
+    const f = file.files[0]; if (!f) return;
+    if (f.size > 10 * 1024 * 1024) return alert("Files must be 10 MB or smaller.");
+    const rr = await call("/v1/documents/" + encodeURIComponent(f.name), { method: "PUT", headers: { "content-type": f.type || "text/plain" }, body: f });
+    const jj = await rr.json().catch(() => ({}));
+    if (!rr.ok) return alert(jj.error || ("HTTP " + rr.status));
+    render("documents");
+  } })]));
+}
+
+async function testDocuments(statusNode, btn) {
+  note(statusNode, "Running authenticated R2 access test…");
+  btn.disabled = true;
+  const lines = [];
+  const key = "diagnostics/roundtrip-" + crypto.randomUUID() + ".txt";
+  const endpoint = "/v1/documents/" + encodeURIComponent(key);
+  const payload = "round trip " + new Date().toISOString();
+  let uploaded = false;
+  let passed = true;
+  try {
+    const listing = await executiveDocumentRequest("/v1/documents");
+    if (listing.status !== 200) throw new Error("Initial listing HTTP " + listing.status);
+    lines.push("Initial document list: passed");
+    const upload = await executiveDocumentRequest(endpoint, {
+      method: "PUT", headers: {"content-type": "text/plain"}, body: payload
+    });
+    if (upload.status !== 201) throw new Error("Upload HTTP " + upload.status);
+    uploaded = true;
+    lines.push("Upload: passed");
+    const prefix = await executiveDocumentRequest("/v1/documents?prefix=diagnostics");
+    if (prefix.status !== 200) throw new Error("Prefix list HTTP " + prefix.status);
+    const result = await prefix.json();
+    if (!Array.isArray(result?.objects) || !result.objects.some(o => o.name === key))
+      throw new Error("Uploaded document not listed");
+    lines.push("Prefix listing: passed");
+    const read = await executiveDocumentRequest(endpoint);
+    if (read.status !== 200 || (await read.text()) !== payload)
+      throw new Error("Download integrity check failed");
+    lines.push("Download integrity: passed");
+  } catch (error) {
+    passed = false;
+    lines.push("ERROR: " + (error.message || String(error)));
+  } finally {
+    if (uploaded) {
+      try {
+        const deletion = await executiveDocumentRequest(endpoint, {method: "DELETE"});
+        if (deletion.status !== 200) throw new Error("Deletion HTTP " + deletion.status);
+        const gone = await executiveDocumentRequest(endpoint);
+        if (gone.status !== 404) throw new Error("Object remains after deletion, HTTP " + gone.status);
+        lines.push("Delete and 404 verification: passed");
+      } catch (error) {
+        passed = false;
+        lines.push("CLEANUP FAILED: " + (error.message || String(error)) + "; key: " + key);
+      }
+    }
+    btn.disabled = false;
+    note(statusNode, (passed ? "Authenticated access test passed.\\n" : "Access test failed.\\n") +
+      lines.join("\\n"), passed ? "ok" : "err");
+  }
+}
+
+async function account(app) {
+  app.append(card("Account", [
+    el("div", { class: "muted", text: "Signed in as " + (me.email || me.id) + (role ? " with role " + role : " with no executive role") }),
+    el("div", { class: "muted", text: "Set a password to sign in without waiting for an emailed link." }),
+    el("div", { class: "row", style: "margin-top:12px" }, [
+      el("input", { id: "acctPw", type: "password", autocomplete: "new-password", placeholder: "New password (min 10 characters)", style: "min-width:280px" }),
+      el("button", { class: "primary", text: "Save password", onclick: async () => {
+        const pw = $("#acctPw").value; const out = $("#acctMsg");
+        if (pw.length < 10) { note(out, "Use at least 10 characters.", "err"); return; }
+        const { error } = await sb.auth.updateUser({ password: pw });
+        if (error) return note(out, error.message, "err");
+        $("#acctPw").value = ""; note(out, "Password saved. You can sign in with it from now on.", "ok");
+      } })
+    ]),
+    el("div", { id: "acctMsg", class: "muted", style: "margin-top:10px" }),
+    el("div", { class: "row", style: "margin-top:16px" }, [el("button", { text: "Sign out", onclick: async () => { await sb.auth.signOut(); location.reload(); } })])
+  ]));
 }
 
 async function research(app) {
@@ -376,24 +944,23 @@ async function research(app) {
   const vault = card("Research vault — agent submissions", el("div", { class: "muted", text: "Loading…" }));
   app.append(vault);
   const [{ data: entries, error: ee }, { data: agentRows }] = await Promise.all([
-    sb.schema("executive").from("research_entries").select("id,title,topic,domain,agent_name,status,trust_score,created_at").order("created_at", { ascending: false }).limit(100),
-    sb.schema("executive").from("agents").select("id,name").order("name")
+    exec().from("research_entries").select("id,title,topic,domain,agent_name,status,trust_score,created_at").order("created_at", { ascending: false }).limit(100),
+    exec().from("agents").select("id,name").order("name")
   ]);
   vault.textContent = ""; vault.append(el("h2", { text: "Research vault — agent submissions" }));
   if (ee) fail(vault, ee);
   else vault.append(table(["title", "topic", "agent", "status", "trust", ""],
-    (entries || []).map(r => [r.title, esc(r.topic || ""), esc(r.agent_name || ""), r.status, r.trust_score ?? "",
-      canManageRole() ? el("button", { text: "Verify", onclick: async (ev) => {
+    (entries || []).map(r => [r.title, s(r.topic || ""), s(r.agent_name || ""), r.status, r.trust_score ?? "",
+      canManage() ? el("button", { text: "Verify", onclick: async (ev) => {
         ev.target.disabled = true;
-        const rr = await fetch(workerUrl + "/v1/verify", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ entry_id: r.id }) });
+        const rr = await workerFetch("/v1/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ entry_id: r.id }) });
         const jj = await rr.json().catch(() => ({}));
         if (!rr.ok) { alert(jj.error || ("HTTP " + rr.status)); ev.target.disabled = false; return; }
         alert("Verified: " + jj.verdict + " — trust " + jj.trust_score + " (" + jj.model + ")");
         render("research");
       } }) : ""]),
     "No research entries filed yet."));
-  const canWrite = role && ["owner", "admin", "researcher"].includes(role);
-  if (canWrite) {
+  if (canWrite()) {
     vault.append(el("div", { class: "muted", style: "margin-top:14px", text: "File a research entry — the summary is the claim the verifier will check" }));
     vault.append(el("div", { class: "row", style: "margin-top:8px" }, [
       el("input", { id: "eTitle", placeholder: "Entry title" }),
@@ -407,7 +974,7 @@ async function research(app) {
         const title = $("#eTitle").value.trim(); if (!title) return;
         const agentId = $("#eAgent").value || null;
         const agent = (agentRows || []).find(a => a.id === agentId);
-        const { error } = await sb.schema("executive").from("research_entries").insert({
+        const { error } = await exec().from("research_entries").insert({
           title, topic: $("#eTopic").value.trim() || null, domain: $("#eDomain").value,
           summary: $("#eSummary").value.trim() || null,
           agent_id: agentId, agent_name: agent ? agent.name : null, owner_id: me.id
@@ -419,65 +986,19 @@ async function research(app) {
   }
 }
 
-async function documents(app) {
-  const box = card("Private documents (Cloudflare R2)", [
-    el("div", { class: "muted", text: "Connected to the dedicated executive Cloudflare R2 Worker. Authentication uses your current Supabase session." }),
-    el("div", { id: "docList", class: "muted", style: "margin-top:12px", text: "Loading…" })
-  ]);
-  app.append(box);
-  const call = (path, opts = {}) => fetch(workerUrl + path, { ...opts, headers: { Authorization: "Bearer " + session.access_token, ...(opts.headers || {}) } });
-  try {
-    const r = await call("/v1/documents");
-    const j = await r.json();
-    const list = $("#docList"); list.textContent = "";
-    if (!r.ok) { list.className = "err"; list.textContent = j.error || ("HTTP " + r.status); return; }
-    list.className = "";
-    if (!j.objects?.length) { list.className = "muted"; list.textContent = "No documents stored."; }
-    else list.append(table(["name", "size", ""], j.objects.map(o => [o.name, o.size, el("div", {class:"row"}, [
-      el("button", { text: "Download", onclick: async () => {
-        const rr = await call("/v1/documents/" + encodeURIComponent(o.name));
-        if (!rr.ok) return alert("Could not download document");
-        const b = await rr.blob(); const uri = URL.createObjectURL(b);
-        const a = el("a", { href: uri, download: o.name.split("/").pop() }); a.click();
-        setTimeout(() => URL.revokeObjectURL(uri), 60000);
-      } }),
-      el("button", {text:"Delete", onclick: async () => {
-        if (!confirm("Permanently delete " + o.name + "?")) return;
-        const rr = await call("/v1/documents/" + encodeURIComponent(o.name), {method:"DELETE"});
-        if (!rr.ok) return alert("Could not delete document");
-        render("documents");
-      }})
-    ])])));
-    const file = el("input", { type: "file" });
-    list.append(el("div", { class: "row", style: "margin-top:12px" }, [file, el("button", { class: "primary", text: "Upload", onclick: async () => {
-      const f = file.files[0]; if (!f) return;
-      const ext = f.name.split(".").pop().toLowerCase();
-      const mime = ({pdf:"application/pdf",txt:"text/plain",md:"text/markdown",markdown:"text/markdown",json:"application/json"})[ext];
-      if (!mime) return alert("Supported file formats: PDF, TXT, MD, JSON.");
-      const rr = await call("/v1/documents/" + encodeURIComponent(f.name), { method: "PUT", headers: { "content-type": mime }, body: f });
-      const jj = await rr.json().catch(() => ({}));
-      if (!rr.ok) return alert(jj.error || ("HTTP " + rr.status));
-      render("documents");
-    } })]));
-  } catch (e) { const list = $("#docList"); list.className = "err"; list.textContent = "Worker unreachable from this page: " + e.message; }
-}
-
-const canWriteRole = () => role && ["owner", "admin", "researcher"].includes(role);
-const canManageRole = () => role && ["owner", "admin"].includes(role);
-
 async function agents(app) {
   const box = card("Agents — registry", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
-  const { data, error } = await sb.schema("executive").from("agents")
+  const { data, error } = await exec().from("agents")
     .select("id,name,role,host,category,status,purpose,runtime,model,system_prompt,submission_count,last_submission_at,is_active")
     .order("sort_order").order("name").limit(100);
   box.textContent = ""; box.append(el("h2", { text: "Agents — registry" }));
   if (error) fail(box, error);
   else box.append(table(["agent", "purpose", "runtime / host", "category", "status", "submissions", "model"],
-    (data || []).map(a => [a.name, esc(a.purpose || a.role || ""), esc([a.runtime, a.host].filter(Boolean).join(" · ")), esc(a.category || ""), a.status + (a.is_active === false ? " (chat off)" : ""), a.submission_count ?? 0, esc(a.model || "")]),
+    (data || []).map(a => [a.name, s(a.purpose || a.role || ""), s([a.runtime, a.host].filter(Boolean).join(" · ")), s(a.category || ""), a.status + (a.is_active === false ? " (chat off)" : ""), a.submission_count ?? 0, s(a.model || "")]),
     "No agents registered yet."));
   box.append(el("div", { class: "muted", style: "margin-top:10px", text: "Registry entries are the agents that file research (Veritas Version B). An entry may also carry chat configuration (Version A: category, model, system prompt) for agents members can talk to. API keys are never shown or stored here in clear text — only a SHA-256 hash is kept, set outside the console." }));
-  if (canWriteRole()) {
+  if (canWrite()) {
     box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Register an agent" }));
     box.append(el("div", { class: "row", style: "margin-top:8px" }, [
       el("input", { id: "aName", placeholder: "Agent name" }),
@@ -491,7 +1012,7 @@ async function agents(app) {
       el("button", { class: "primary", text: "Register", onclick: async () => {
         const name = $("#aName").value.trim(); if (!name) return;
         const model = $("#aModel").value.trim();
-        const { error } = await sb.schema("executive").from("agents").insert({
+        const { error } = await exec().from("agents").insert({
           name, purpose: $("#aPurpose").value.trim() || null, runtime: $("#aRuntime").value.trim() || null,
           category: $("#aCategory").value || null, ...(model ? { model } : {}),
           system_prompt: $("#aPrompt").value.trim() || null
@@ -537,7 +1058,7 @@ async function agents(app) {
         $("#chatInput").value = "";
         drawLog();
         ev.target.disabled = true;
-        const rr = await fetch(workerUrl + "/v1/chat", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ agent_id: chatState.agentId, messages: chatState.messages }) });
+        const rr = await workerFetch("/v1/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ agent_id: chatState.agentId, messages: chatState.messages }) });
         const jj = await rr.json().catch(() => ({}));
         ev.target.disabled = false;
         if (!rr.ok) { log.append(el("div", { class: "err", text: jj.error || ("HTTP " + rr.status) })); return; }
@@ -553,16 +1074,16 @@ async function schedule(app) {
   const box = card("Review schedule", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
   const [{ data, error }, { data: entries }] = await Promise.all([
-    sb.schema("executive").from("review_schedules").select("id,entry_id,title,agent_name,due_date,interval_days,status,completed_at").order("due_date").limit(100),
-    sb.schema("executive").from("research_entries").select("id,title,agent_name").order("created_at", { ascending: false }).limit(100)
+    exec().from("review_schedules").select("id,entry_id,title,agent_name,due_date,interval_days,status,completed_at").order("due_date").limit(100),
+    exec().from("research_entries").select("id,title,agent_name").order("created_at", { ascending: false }).limit(100)
   ]);
   const entryById = Object.fromEntries((entries || []).map(e => [e.id, e]));
   box.textContent = ""; box.append(el("h2", { text: "Review schedule" }));
   if (error) fail(box, error);
   else box.append(table(["entry", "agent", "due", "every (days)", "status"],
-    (data || []).map(s => [esc(s.title || entryById[s.entry_id]?.title || ""), esc(s.agent_name || entryById[s.entry_id]?.agent_name || ""), day(s.due_date), s.interval_days, s.completed_at ? "completed" : s.status]),
+    (data || []).map(s => [s(s.title || entryById[s.entry_id]?.title || ""), s(s.agent_name || entryById[s.entry_id]?.agent_name || ""), day(s.due_date), s.interval_days, s.completed_at ? "completed" : s.status]),
     "No reviews scheduled yet."));
-  if (canWriteRole() && entries?.length) {
+  if (canWrite() && entries?.length) {
     box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Schedule a re-verification" }));
     box.append(el("div", { class: "row", style: "margin-top:8px" }, [
       el("select", { id: "sEntry" }, entries.map(e => el("option", { value: e.id, text: e.title }))),
@@ -571,7 +1092,7 @@ async function schedule(app) {
       el("button", { class: "primary", text: "Schedule", onclick: async () => {
         const entry = entryById[$("#sEntry").value]; if (!entry) return;
         const due = $("#sDue").value; if (!due) return alert("Pick a due date.");
-        const { error } = await sb.schema("executive").from("review_schedules").insert({
+        const { error } = await exec().from("review_schedules").insert({
           entry_id: entry.id, owner_id: me.id, title: entry.title, agent_name: entry.agent_name,
           due_date: due, interval_days: Number($("#sInterval").value) || 7
         });
@@ -585,15 +1106,15 @@ async function schedule(app) {
 async function awards(app) {
   const box = card("Award categories", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
-  const { data: cats, error } = await sb.schema("executive").from("award_categories")
+  const { data: cats, error } = await exec().from("award_categories")
     .select("id,name,tagline,cycle,year,status,total_points").order("sort_order").order("name").limit(100);
   const catById = Object.fromEntries((cats || []).map(c => [c.id, c]));
   box.textContent = ""; box.append(el("h2", { text: "Award categories" }));
   if (error) fail(box, error);
   else box.append(table(["category", "cycle", "status", "points"],
-    (cats || []).map(c => [c.name, esc([c.cycle, c.year].filter(Boolean).join(" ")), c.status, c.total_points]),
+    (cats || []).map(c => [c.name, s([c.cycle, c.year].filter(Boolean).join(" ")), c.status, c.total_points]),
     "No award categories yet."));
-  if (canManageRole()) {
+  if (canManage()) {
     box.append(el("div", { class: "row", style: "margin-top:14px" }, [
       el("input", { id: "cName", placeholder: "Category name" }),
       el("input", { id: "cSlug", placeholder: "slug" }),
@@ -602,7 +1123,7 @@ async function awards(app) {
       el("button", { class: "primary", text: "Add category", onclick: async () => {
         const name = $("#cName").value.trim(); if (!name) return;
         const slug = $("#cSlug").value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-        const { error } = await sb.schema("executive").from("award_categories").insert({
+        const { error } = await exec().from("award_categories").insert({
           name, slug, cycle: $("#cCycle").value.trim() || null,
           year: Number($("#cYear").value) || null
         });
@@ -614,14 +1135,14 @@ async function awards(app) {
 
   const nbox = card("Nominations", el("div", { class: "muted", text: "Loading…" }));
   app.append(nbox);
-  const { data: subs, error: se } = await sb.schema("executive").from("submissions")
+  const { data: subs, error: se } = await exec().from("submissions")
     .select("id,category_id,nominee_name,nominee_type,nominator_name,status,created_at").order("created_at", { ascending: false }).limit(100);
   nbox.textContent = ""; nbox.append(el("h2", { text: "Nominations" }));
   if (se) fail(nbox, se);
   else nbox.append(table(["nominee", "category", "type", "nominator", "status"],
-    (subs || []).map(s => [s.nominee_name, esc(catById[s.category_id]?.name || ""), s.nominee_type, esc(s.nominator_name || ""), s.status]),
+    (subs || []).map(s => [s.nominee_name, s(catById[s.category_id]?.name || ""), s.nominee_type, s(s.nominator_name || ""), s.status]),
     "No nominations yet."));
-  if (canWriteRole() && cats?.length) {
+  if (canWrite() && cats?.length) {
     nbox.append(el("div", { class: "row", style: "margin-top:14px" }, [
       el("select", { id: "nCat" }, cats.map(c => el("option", { value: c.id, text: c.name }))),
       el("input", { id: "nName", placeholder: "Nominee name" }),
@@ -630,7 +1151,7 @@ async function awards(app) {
       el("button", { class: "primary", text: "Nominate", onclick: async () => {
         const nominee = $("#nName").value.trim(); if (!nominee) return;
         const cat = catById[$("#nCat").value];
-        const { error } = await sb.schema("executive").from("submissions").insert({
+        const { error } = await exec().from("submissions").insert({
           category_id: cat.id, category_name: cat.name, nominee_name: nominee,
           nominee_type: $("#nType").value, nominator_name: $("#nBy").value.trim() || null,
           summary: $("#nSummary").value.trim() || null
@@ -646,11 +1167,11 @@ async function awards(app) {
 }
 
 async function judging(app) {
-  if (!canManageRole()) {
+  if (!canManage()) {
     app.append(card("Judging", el("div", { class: "muted", text: "Judging criteria, judgments, and criteria change requests are board data. They are restricted to owner and admin accounts, in the database as well as here." })));
     return;
   }
-  const { data: cats } = await sb.schema("executive").from("award_categories").select("id,name").order("sort_order").order("name");
+  const { data: cats } = await exec().from("award_categories").select("id,name").order("sort_order").order("name");
   const catById = Object.fromEntries((cats || []).map(c => [c.id, c]));
 
   const cbox = card("Judging criteria — board only", el("div", { class: "muted", text: "Loading…" }));
@@ -659,11 +1180,11 @@ async function judging(app) {
   async function loadCriteria() {
     critHost.textContent = "";
     const catId = $("#jCat")?.value; if (!catId) return;
-    const { data, error } = await sb.schema("executive").from("judging_criteria")
+    const { data, error } = await exec().from("judging_criteria")
       .select("name,max_points,definition,sort_order").eq("category_id", catId).order("sort_order").limit(100);
     if (error) return fail(critHost, error);
     critHost.append(table(["criterion", "max points", "definition"],
-      (data || []).map(c => [c.name, c.max_points, esc(c.definition || "")]), "No criteria for this category yet."));
+      (data || []).map(c => [c.name, c.max_points, s(c.definition || "")]), "No criteria for this category yet."));
   }
   cbox.textContent = ""; cbox.append(el("h2", { text: "Judging criteria — board only" }));
   if (!cats?.length) cbox.append(el("div", { class: "muted", text: "Create an award category first." }));
@@ -679,7 +1200,7 @@ async function judging(app) {
       el("input", { id: "jcDef", placeholder: "Definition", style: "min-width:280px" }),
       el("button", { class: "primary", text: "Add criterion", onclick: async () => {
         const name = $("#jcName").value.trim(); if (!name) return;
-        const { error } = await sb.schema("executive").from("judging_criteria").insert({
+        const { error } = await exec().from("judging_criteria").insert({
           category_id: $("#jCat").value, name, max_points: Number($("#jcMax").value) || 25,
           definition: $("#jcDef").value.trim() || null
         });
@@ -691,7 +1212,7 @@ async function judging(app) {
 
   const runbox = card("Run the judge — board only", el("div", { class: "muted", text: "Loading…" }));
   app.append(runbox);
-  const { data: allSubs } = await sb.schema("executive").from("submissions").select("id,nominee_name,status").limit(200);
+  const { data: allSubs } = await exec().from("submissions").select("id,nominee_name,status").limit(200);
   runbox.textContent = ""; runbox.append(el("h2", { text: "Run the judge — board only" }));
   const judgeable = (allSubs || []).filter(s => ["submitted", "screened"].includes(s.status));
   if (!judgeable.length) runbox.append(el("div", { class: "muted", text: "No submissions awaiting judging." }));
@@ -700,7 +1221,7 @@ async function judging(app) {
       el("select", { id: "judgeSub" }, judgeable.map(s => el("option", { value: s.id, text: s.nominee_name + " (" + s.status + ")" }))),
       el("button", { class: "primary", text: "Judge submission", onclick: async (ev) => {
         ev.target.disabled = true;
-        const rr = await fetch(workerUrl + "/v1/judge", { method: "POST", headers: { Authorization: "Bearer " + session.access_token, "content-type": "application/json" }, body: JSON.stringify({ submission_id: $("#judgeSub").value }) });
+        const rr = await workerFetch("/v1/judge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submission_id: $("#judgeSub").value }) });
         const jj = await rr.json().catch(() => ({}));
         if (!rr.ok) { alert(jj.error || ("HTTP " + rr.status)); ev.target.disabled = false; return; }
         alert("Draft judgment recorded: " + jj.judgment.total_points + " / " + jj.judgment.max_points + " (" + jj.judgment.percentage + "%) — " + jj.judgment.recommendation +
@@ -714,28 +1235,28 @@ async function judging(app) {
   const jbox = card("Judgments — board only", el("div", { class: "muted", text: "Loading…" }));
   app.append(jbox);
   const [{ data: judgments, error: je }, { data: subs }] = await Promise.all([
-    sb.schema("executive").from("judgments").select("id,submission_id,category_id,recommendation,total_points,max_points,percentage,status,judged_at").order("created_at", { ascending: false }).limit(100),
-    sb.schema("executive").from("submissions").select("id,nominee_name").limit(200)
+    exec().from("judgments").select("id,submission_id,category_id,recommendation,total_points,max_points,percentage,status,judged_at").order("created_at", { ascending: false }).limit(100),
+    exec().from("submissions").select("id,nominee_name").limit(200)
   ]);
   const subById = Object.fromEntries((subs || []).map(s => [s.id, s]));
   jbox.textContent = ""; jbox.append(el("h2", { text: "Judgments — board only" }));
   if (je) fail(jbox, je);
   else jbox.append(table(["nominee", "category", "recommendation", "points", "%", "status", ""],
     (judgments || []).map(j => [
-      esc(subById[j.submission_id]?.nominee_name || ""), esc(catById[j.category_id]?.name || ""),
-      esc(j.recommendation || ""), j.total_points != null ? (j.total_points + " / " + (j.max_points ?? "")) : "",
+      s(subById[j.submission_id]?.nominee_name || ""), s(catById[j.category_id]?.name || ""),
+      s(j.recommendation || ""), j.total_points != null ? (j.total_points + " / " + (j.max_points ?? "")) : "",
       j.percentage ?? "", j.status,
       el("div", { class: "row" }, [
         el("button", { text: "Print score sheet", onclick: () => printScoreSheet(j.id, subById, catById) }),
         ...(j.status === "draft" ? [
           el("button", { text: "Approve", onclick: async () => {
-            const { error } = await sb.schema("executive").from("judgments").update({ status: "approved" }).eq("id", j.id);
+            const { error } = await exec().from("judgments").update({ status: "approved" }).eq("id", j.id);
             if (error) return alert(error.message);
             render("judging");
           } }),
           el("button", { text: "Overrule", onclick: async () => {
             const note = prompt("Admin note for the overrule:"); if (note === null) return;
-            const { error } = await sb.schema("executive").from("judgments").update({ status: "overridden", admin_note: note }).eq("id", j.id);
+            const { error } = await exec().from("judgments").update({ status: "overridden", admin_note: note }).eq("id", j.id);
             if (error) return alert(error.message);
             render("judging");
           } })
@@ -745,22 +1266,22 @@ async function judging(app) {
 
   const rbox = card("Criteria change requests — board only", el("div", { class: "muted", text: "Loading…" }));
   app.append(rbox);
-  const { data: reqs, error: re } = await sb.schema("executive").from("criteria_change_requests")
+  const { data: reqs, error: re } = await exec().from("criteria_change_requests")
     .select("id,criterion_name,current_definition,proposed_definition,purpose,status,created_at").order("created_at", { ascending: false }).limit(100);
   rbox.textContent = ""; rbox.append(el("h2", { text: "Criteria change requests — board only" }));
   if (re) fail(rbox, re);
   else rbox.append(table(["criterion", "proposed change", "purpose", "status", ""],
     (reqs || []).map(r => [
-      r.criterion_name, esc(r.proposed_definition || ""), esc(r.purpose || ""), r.status,
+      r.criterion_name, s(r.proposed_definition || ""), s(r.purpose || ""), r.status,
       r.status === "pending_review" ? el("div", { class: "row" }, [
         el("button", { text: "Approve", onclick: async () => {
-          const { error } = await sb.schema("executive").from("criteria_change_requests").update({ status: "approved", decided_at: new Date().toISOString() }).eq("id", r.id);
+          const { error } = await exec().from("criteria_change_requests").update({ status: "approved", decided_at: new Date().toISOString() }).eq("id", r.id);
           if (error) return alert(error.message);
           render("judging");
         } }),
         el("button", { text: "Reject", onclick: async () => {
           const note = prompt("Admin note (optional):"); if (note === null) return;
-          const { error } = await sb.schema("executive").from("criteria_change_requests").update({ status: "rejected", admin_note: note || null, decided_at: new Date().toISOString() }).eq("id", r.id);
+          const { error } = await exec().from("criteria_change_requests").update({ status: "rejected", admin_note: note || null, decided_at: new Date().toISOString() }).eq("id", r.id);
           if (error) return alert(error.message);
           render("judging");
         } })
@@ -772,16 +1293,16 @@ async function certified(app) {
   const box = card("Certified register", el("div", { class: "muted", text: "Loading…" }));
   app.append(box);
   const [{ data, error }, { data: cats }] = await Promise.all([
-    sb.schema("executive").from("certified_records").select("id,category_name,award_title,recipient_name,recipient_type,seal_serial,status,issued_at").order("issued_at", { ascending: false, nullsFirst: false }).limit(100),
-    sb.schema("executive").from("award_categories").select("id,name").order("name")
+    exec().from("certified_records").select("id,category_name,award_title,recipient_name,recipient_type,seal_serial,status,issued_at").order("issued_at", { ascending: false, nullsFirst: false }).limit(100),
+    exec().from("award_categories").select("id,name").order("name")
   ]);
   box.textContent = ""; box.append(el("h2", { text: "Certified register" }));
   if (error) fail(box, error);
   else box.append(table(["recipient", "award", "category", "seal serial", "status", "issued", ""],
-    (data || []).map(r => [r.recipient_name, esc(r.award_title || ""), esc(r.category_name || ""), esc(r.seal_serial || ""), r.status, day(r.issued_at),
+    (data || []).map(r => [r.recipient_name, s(r.award_title || ""), s(r.category_name || ""), s(r.seal_serial || ""), r.status, day(r.issued_at),
       r.status === "issued" ? el("button", { text: "Print certificate", onclick: () => printCertificate(r.id) }) : ""]),
     "No certified records issued yet."));
-  if (canManageRole()) {
+  if (canManage()) {
     box.append(el("div", { class: "muted", style: "margin-top:14px", text: "Issue a certified record (the seal serial must be unique)" }));
     box.append(el("div", { class: "row", style: "margin-top:8px" }, [
       el("input", { id: "rName", placeholder: "Recipient name" }),
@@ -791,7 +1312,7 @@ async function certified(app) {
       el("button", { class: "primary", text: "Issue", onclick: async () => {
         const name = $("#rName").value.trim(); if (!name) return;
         const cat = (cats || []).find(c => c.id === $("#rCat").value);
-        const { error } = await sb.schema("executive").from("certified_records").insert({
+        const { error } = await exec().from("certified_records").insert({
           recipient_name: name, award_title: $("#rAward").value.trim() || null,
           category_id: cat ? cat.id : null, category_name: cat ? cat.name : null,
           seal_serial: $("#rSerial").value.trim() || null,
@@ -806,31 +1327,6 @@ async function certified(app) {
       el("input", { id: "rCitation", placeholder: "Citation", style: "min-width:420px" })
     ]));
   }
-}
-
-async function account(app) {
-  const box = card("Account", [
-    el("div", { class: "muted", text: "Signed in as " + (me.email || me.id) + (role ? " with role " + role : "") }),
-    el("div", { class: "muted", text: "Set a password to sign in without waiting for an emailed link." }),
-    el("div", { class: "row", style: "margin-top:12px" }, [
-      el("input", { id: "acctPw", type: "password", autocomplete: "new-password", placeholder: "New password (min 10 characters)", style: "min-width:280px" }),
-      el("button", { class: "primary", text: "Save password", onclick: async () => {
-        const pw = $("#acctPw").value;
-        const out = $("#acctMsg");
-        out.className = "muted";
-        if (pw.length < 10) { out.className = "err"; out.textContent = "Use at least 10 characters."; return; }
-        const { error } = await sb.auth.updateUser({ password: pw });
-        if (error) { out.className = "err"; out.textContent = error.message; return; }
-        $("#acctPw").value = "";
-        out.textContent = "Password saved. You can sign in with it from now on.";
-      } })
-    ]),
-    el("div", { id: "acctMsg", class: "muted", style: "margin-top:10px" }),
-    el("div", { class: "row", style: "margin-top:16px" }, [
-      el("button", { text: "Sign out", onclick: async () => { await sb.auth.signOut(); location.reload(); } })
-    ])
-  ]);
-  app.append(box);
 }
 
 sb.auth.onAuthStateChange((event) => {

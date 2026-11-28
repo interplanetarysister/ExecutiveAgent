@@ -34,8 +34,13 @@ MIGRATIONS=(
   "supabase/migrations/20261126_align_executive_member_rls.sql"
   "supabase/migrations/20261127_repair_audit_log_target_columns.sql"
   "supabase/migrations/20261126_member_write_policies.sql"
+  "supabase/migrations/20261126_grant_member_dml.sql"
   "supabase/migrations/20261126_enable_member_task_writes.sql"
   "supabase/migrations/20261126_reconcile_canonical.sql"
+  "supabase/migrations/20261126_executive_appointments_correspondence.sql"
+  "supabase/migrations/20261126_executive_deadline_monitor.sql"
+  "supabase/migrations/20261126_executive_scheduler_execution_receipts.sql"
+  "supabase/migrations/20261126_recording_contract.sql"
   "supabase/migrations/20261127_veritas_agents_registry.sql"
   "supabase/migrations/20261127_veritas_nexus_domain.sql"
 )
