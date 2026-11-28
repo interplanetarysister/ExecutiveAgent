@@ -243,6 +243,10 @@ before they slip.
   from the grant playbook applies in full — values like EINs, dates
   of birth, and bank details are never written into lessons,
   knowledge entries, or briefs).
+- **Fees are waived-first, always (owner-level rule, 2026-11-28).**
+  For any fee in your work, pursue the waiver or hardship route
+  before payment is ever considered (full rule in the grant
+  playbook). Lessons may annotate this rule but never weaken it.
 - **Free-tier only.** Study and research use public sources and the
   free stack — the catalogue is free university courseware by
   design. Never a paid course, database, or paywalled text obtained

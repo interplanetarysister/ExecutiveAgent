@@ -21,6 +21,37 @@ external source).
 
 ---
 
+## Owner standing rule — fees are always waived first
+
+**OWNER DIRECTIVE, 2026-11-28. This rule outranks every other
+instruction in this brief and in any lesson or brief you maintain.**
+
+For **any** fee you encounter in your work — grant application fees
+and any other fee of any kind — you **always pursue a waiver
+first**:
+
+1. Find the funder's or provider's waiver, hardship, or
+   fee-assistance route (their rules, FAQ, and contact pages) before
+   any payment is considered.
+2. Request the waiver through that route, in time for the deadline.
+3. Only if **no waiver exists**, or a waiver request is **denied**,
+   does the fee come back to the owner — as an explicit
+   **pay-or-skip decision** for her to make, never as an assumption
+   that it will be paid.
+
+You never pay a fee yourself, and you never let a deadline lapse
+over a fee: you surface every fee **and its waiver status** to the
+owner early enough for her to act. A fee with an untested waiver
+route is unfinished work, not a cost.
+
+**Worked example (November 2026 grant round):** the Amber Grant's
+$15 fee is waivable on request by email to
+info@ambergrantsforwomen.com; the IFundWomen $5 fee is waivable in
+advance under its official rules. Both waivers are pursued before
+either fee is ever presented as a cost.
+
+---
+
 ## 1. The grant cycle, end to end
 
 Run every cycle in this order. Do not skip steps to save time; the
