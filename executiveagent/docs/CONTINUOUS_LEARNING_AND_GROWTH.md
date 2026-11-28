@@ -255,3 +255,23 @@ before they slip.
   and none applied is storage. One lesson that changes a brief and
   improves a real result is learning. Report your progress that way
   — by what improved, not by what accumulated.
+
+---
+
+## Learning record
+
+**2026-11-28 — first worked examples captured.** The November 2026
+grant cycle and its fee-waiver correspondence were run live as
+supervised worked examples and captured as payload files in the docs
+pattern, ready to file through `POST /v1/agent/knowledge` once
+activation lands: `grant-worked-example-2026-11-28-payload.json`
+(department `funding`, topic `grant-applications`) and
+`email-writing-worked-example-2026-11-28-payload.json` (department
+`correspondence`, topic `fee-waiver-emails`). Their outcome review
+is due when the funders respond (§5). The same day, at the owner's
+direction, the business-study expansion was queued — business-facing
+categories first, with a catalogue-extension research task covering
+business finance and accounting, marketing, operations management,
+business law basics, and sales and partnership development —
+recorded in `business-study-expansion-payload.json` (department
+`learning`, topic `business-study-queue`).
