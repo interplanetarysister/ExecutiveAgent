@@ -135,6 +135,52 @@ test(
   },
 );
 
+test(
+  "michelle rogers agent is registered without key material; research source_url dedupe is database-backed",
+  { skip },
+  async (t) => {
+    const db = await rehearsedDb();
+    t.after(() => db.close());
+
+    const { rows } = await db.query(
+      `select name, role, host, status, category, api_key_hash, api_key_hint
+         from executive.agents
+        where name = 'Michelle Rogers — Executive Agent'`,
+    );
+    assert.equal(rows.length, 1, "exactly one Michelle Rogers — Executive Agent row");
+    const agent = rows[0];
+    assert.equal(agent.role, "executive");
+    assert.equal(agent.host, "cloudflare");
+    assert.equal(agent.status, "active");
+    assert.equal(agent.category, "executive");
+    // No key material in source: the hash is set at activation, out of band.
+    assert.equal(agent.api_key_hash, null);
+    assert.equal(agent.api_key_hint, null);
+
+    // The partial unique index makes the knowledge endpoint's
+    // dedupe-by-source_url rule a database guarantee for filed sources…
+    await actAs(db, "postgres");
+    await db.exec(`
+      insert into public.executive_research (title, kind, source_url)
+      values ('First filing', 'source', 'https://example.com/course');
+    `);
+    assert.ok(
+      await isRejected(
+        db,
+        `insert into public.executive_research (title, kind, source_url)
+         values ('Duplicate filing', 'source', 'https://example.com/course')`,
+      ),
+      "a second research row with the same source_url is rejected",
+    );
+    // …while rows without a source_url stay unrestricted.
+    await db.exec(`
+      insert into public.executive_research (title, kind, source_url)
+      values ('Sourceless note A', 'reference', null),
+             ('Sourceless note B', 'reference', null);
+    `);
+  },
+);
+
 test("veritas RLS behavior: member, board, outsider, anonymous", { skip }, async (t) => {
   const db = await rehearsedDb();
   t.after(() => db.close());

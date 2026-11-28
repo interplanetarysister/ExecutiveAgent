@@ -192,6 +192,26 @@ which applies exactly this manifest.
 - **Prerequisites:** Requires the canonical set above, in particular the
   reconcile migration (step 8) and the Veritas agents registry (step 13).
 
+### 15. `supabase/migrations/20261128_register_michelle_rogers_agent.sql`
+
+- **Purpose:** Registers the "Michelle Rogers — Executive Agent" row in
+  `executive.agents` (active, category `executive`, host `cloudflare`)
+  so the autonomous knowledge-entry route (`POST /v1/agent/knowledge`)
+  has its own registry identity, and adds a partial unique index on
+  `public.executive_research(source_url)` so the endpoint's
+  dedupe-by-source_url rule is backed by the database. The row carries
+  **no key material**: `api_key_hash` / `api_key_hint` stay NULL and are
+  set at activation time, out of band (see the Activation runbook in
+  `executiveagent/docs/AGENT_KNOWLEDGE_ENTRY.md`).
+- **Prerequisites:** Requires the core schema (step 1, for
+  `executive.agents`), the foundation migration (step 2, for
+  `public.executive_research`), the audit-log target columns (step 4;
+  its audit insert names them), and the Veritas agents registry
+  (step 13, for the registry columns and category check). Before
+  applying live, run the duplicate-`source_url` pre-check in the file
+  header: pre-existing duplicates would make the unique index fail.
+- **Header status:** Source-only; NOT applied to the live project.
+
 ## DO NOT APPLY
 
 ### `executiveagent/supabase/migrations/20231123_init.sql`

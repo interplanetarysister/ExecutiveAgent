@@ -43,6 +43,7 @@ MIGRATIONS=(
   "supabase/migrations/20261126_recording_contract.sql"
   "supabase/migrations/20261127_veritas_agents_registry.sql"
   "supabase/migrations/20261127_veritas_nexus_domain.sql"
+  "supabase/migrations/20261128_register_michelle_rogers_agent.sql"
 )
 
 total="${#MIGRATIONS[@]}"
